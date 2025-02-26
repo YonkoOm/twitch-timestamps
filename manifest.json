@@ -1,0 +1,20 @@
+{
+  "name": "Twitch Timestamps",
+  "description": "Saving timestamps of your favorite moments from stream",
+  "version": "1.0",
+  "manifest_version": 3,
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "js": ["content.js"],
+      "matches": ["https://www.twitch.tv/*"]
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": ["activeTab", "storage", "tabs"],
+  "host_permissions": ["*://*.twitch.tv/*"]
+}
