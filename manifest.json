@@ -16,5 +16,16 @@
     "service_worker": "background.js"
   },
   "permissions": ["activeTab", "storage", "tabs"],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "assets/bookmark-black.svg",
+        "assets/bookmark-white.svg",
+        "assets/play.svg",
+        "assets/trash.svg"
+      ],
+      "matches": ["*://*.twitch.tv/*"]
+    }
+  ],
   "host_permissions": ["*://*.twitch.tv/*"]
 }
