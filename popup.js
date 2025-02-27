@@ -33,7 +33,6 @@ const convertSecondsToTimeFormat = (timestamp) => {
   return `${paddedHours}:${paddedMinutes}:${paddedSeconds}`;
 };
 
-// TODO: add eventlistener for click
 const setBookmarkAttributes = (name, controlsElement, eventListener) => {
   const controlElement = document.createElement("img");
   controlElement.className = "control-element";
