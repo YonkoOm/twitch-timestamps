@@ -106,8 +106,10 @@
     if (videoPlayer.length === 0) return null;
 
     const button = document.createElement("button");
-    button.innerText = "bookmark";
+    const img = document.createElement("img");
+    img.src = chrome.runtime.getURL("assets/bookmark-white.svg");
     button.className = "bookmark";
+    button.appendChild(img);
     videoPlayer[0].append(button);
 
     return button;
@@ -156,6 +158,21 @@
       console.log("URL Changed: ", request.url);
       // chrome.storage.local.clear();
       bookmark();
+    } else if (request.type === "PLAY") {
+      const video = document.querySelector("video");
+      video.currentTime = request.time;
+    } else if (request.type === "DELETE") {
+      console.log("IN DELETE");
+      const res = await chrome.storage.local.get(["timestamps"]);
+      const vodId = getVodId();
+      const timestamps = res.timestamps;
+      timestamps[vodId] = timestamps[vodId].filter(
+        (timestamp) => timestamp !== request.time,
+      );
+
+      await chrome.storage.local.set({
+        timestamps,
+      });
     }
   });
 })();
