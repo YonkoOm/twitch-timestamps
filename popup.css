@@ -1,0 +1,58 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+h1 {
+  font-size: 20px;
+  margin-bottom: 10px;
+}
+
+.container {
+  width: 280px;
+  padding: 5px;
+}
+
+.bookmarks {
+  padding-left: 10px;
+  padding-right: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.bookmark {
+  font-size: 14px;
+  border: 2px solid blue;
+  padding: 5px;
+  border-radius: 5px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  justify-content: space-between;
+}
+
+.bookmark::before {
+  content: "";
+  position: absolute;
+  height: 100%;
+  width: 2px;
+  background-color: blue;
+  top: 0;
+  left: 0;
+}
+
+.timestamp-controls {
+  display: flex;
+  gap: 3px;
+}
+
+.control-element {
+  padding: 2px;
+  cursor: pointer;
+}
+
+.control-element:hover {
+  transform: scale(1.1);
+}
