@@ -1,4 +1,4 @@
-// TODO: Need to check for the case where the VOD may be subscribers only
+// TODO: need to check for the case where the VOD may be subscribers only (MAYBE)
 // TODO: create a function that grabs the access token
 (() => {
   const getTwitchStreamer = () => {
@@ -46,11 +46,27 @@
     return vod;
   };
 
+  const insertSorted = (timestamps, timestamp) => {
+    let left = 0,
+      right = timestamps.length - 1;
+
+    while (left <= right) {
+      let mid = Math.floor((left + right) / 2);
+      if (timestamps[mid] > timestamp) {
+        right = mid - 1;
+      } else {
+        left = mid + 1;
+      }
+    }
+
+    timestamps.splice(left, 0, timestamp);
+  };
+
   const addTimestamp = async (vodId, timestamp) => {
     const res = await chrome.storage.local.get(["timestamps"]);
     const timestamps = res.timestamps || {};
     timestamps[vodId] = timestamps[vodId] || [];
-    timestamps[vodId].push(timestamp);
+    insertSorted(timestamps[vodId], timestamp);
 
     await chrome.storage.local.set({ timestamps });
 
