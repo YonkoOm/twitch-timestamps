@@ -59,9 +59,9 @@
     console.log(response.timestamps || []);
   };
 
-  // TODO: maybe fix the parameters
-  const timestamp = async (liveStreamData = null, vodId = 0) => {
-    if (liveStreamData) {
+  const timestamp = async (liveStreamInfo = null) => {
+    if (liveStreamInfo) {
+      const { liveStreamData, vodId } = liveStreamInfo;
       const startedAt = new Date(liveStreamData.started_at);
       const currentTime = new Date();
 
@@ -135,7 +135,9 @@
       const button = addVideoPlayerButton();
       if (!button) return;
 
-      button.addEventListener("click", () => timestamp(liveStreamData, vod.id));
+      button.addEventListener("click", () =>
+        timestamp({ liveStreamData: liveStreamData, vodId: vod.id }),
+      );
     } else if (getVodId()) {
       console.log("Watching VOD");
       const button = addVideoPlayerButton();
