@@ -1,5 +1,7 @@
 import { getActiveTabUrl } from "./utils.js";
 
+// TODO: when the user clicks the bookmark, have a little modal appear allowing them to add a little note about the bookmark
+
 const onPlay = async (e) => {
   const activeTab = await getActiveTabUrl();
   const timestamp = e.target.parentNode.parentNode.getAttribute("timestamp");
@@ -65,6 +67,18 @@ const addTimestamp = (bookmarks, timestamp) => {
 const displayTimestamps = (currTimestamps) => {
   const bookmarks = document.getElementsByClassName("bookmarks")[0];
 
+  if (currTimestamps.length === 0) {
+    const divElement = document.createElement("div");
+
+    divElement.innerHTML =
+      "There are no timestamps saved for the current VOD :(";
+    divElement.style.fontSize = "14px";
+    divElement.style.fontWeight = "bold";
+
+    bookmarks.appendChild(divElement);
+    return;
+  }
+
   for (const timestamp of currTimestamps) {
     addTimestamp(bookmarks, timestamp);
   }
@@ -83,6 +97,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     displayTimestamps(timestamps);
   } else {
     const container = document.getElementsByClassName("container")[0];
-    container.innerHTML = '<h1 class="title">This is not a VOD</h1>';
+    container.innerHTML = '<div class="title">This is not a VOD</div>';
   }
 });
