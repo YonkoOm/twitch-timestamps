@@ -2,6 +2,22 @@ import { getActiveTabUrl } from "./utils.js";
 
 // TODO: when the user clicks the bookmark, have a little modal appear allowing them to add a little note about the bookmark
 
+const getVodId = async () => {
+  const activeTab = await getActiveTabUrl();
+  const match = activeTab.url.match(/twitch\.tv\/videos\/(\d+)/);
+  return match ? match[1] : null;
+};
+
+const displayEmpty = () => {
+  const bookmarks = document.getElementsByClassName("bookmarks")[0];
+  const divElement = document.createElement("div");
+  divElement.className = "empty-timestamps";
+
+  divElement.innerText = "Add timestamps to see them here :)";
+
+  bookmarks.appendChild(divElement);
+};
+
 const onPlay = async (e) => {
   const activeTab = await getActiveTabUrl();
   const timestamp = e.target.parentNode.parentNode.getAttribute("timestamp");
@@ -18,10 +34,18 @@ const onDelete = async (e) => {
   const bookmark = document.getElementById(`bookmark-${timestamp}`);
   bookmark.remove();
 
-  chrome.tabs.sendMessage(activeTab.id, {
+  await chrome.tabs.sendMessage(activeTab.id, {
     type: "DELETE",
     time: Number(timestamp),
   });
+
+  const vodId = await getVodId();
+  const res = await chrome.storage.local.get(["timestamps"]);
+  const timestamps = res.timestamps[vodId] || [];
+
+  if (timestamps.length === 0) {
+    displayEmpty();
+  }
 };
 
 const convertSecondsToTimeFormat = (timestamp) => {
@@ -65,19 +89,11 @@ const addTimestamp = (bookmarks, timestamp) => {
 };
 
 const displayTimestamps = (currTimestamps) => {
-  const bookmarks = document.getElementsByClassName("bookmarks")[0];
-
   if (currTimestamps.length === 0) {
-    const divElement = document.createElement("div");
-
-    divElement.innerHTML =
-      "There are no timestamps saved for the current VOD :(";
-    divElement.style.fontSize = "14px";
-    divElement.style.fontWeight = "bold";
-
-    bookmarks.appendChild(divElement);
-    return;
+    displayEmpty();
   }
+
+  const bookmarks = document.getElementsByClassName("bookmarks")[0];
 
   for (const timestamp of currTimestamps) {
     addTimestamp(bookmarks, timestamp);
@@ -86,13 +102,11 @@ const displayTimestamps = (currTimestamps) => {
 
 // Wait until the DOM is fully loaded
 document.addEventListener("DOMContentLoaded", async () => {
-  const activeTab = await getActiveTabUrl();
-  const match = activeTab.url.match(/twitch\.tv\/videos\/(\d+)/);
+  const vodId = await getVodId();
 
-  if (match && match[1]) {
-    console.log(match[1]);
+  if (vodId) {
     const res = await chrome.storage.local.get(["timestamps"]);
-    const timestamps = res.timestamps[match[1]] || [];
+    const timestamps = res.timestamps[vodId] || [];
     console.log(timestamps);
     displayTimestamps(timestamps);
   } else {
