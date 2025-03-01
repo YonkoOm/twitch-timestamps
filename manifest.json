@@ -9,7 +9,8 @@
   "content_scripts": [
     {
       "js": ["content.js"],
-      "matches": ["https://www.twitch.tv/*"]
+      "matches": ["https://www.twitch.tv/*"],
+      "css": ["content.css"]
     }
   ],
   "background": {

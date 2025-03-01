@@ -1,0 +1,27 @@
+.bookmark {
+  padding: 3px;
+}
+
+.bookmark:hover {
+  background-color: rgba(0, 0, 0, 0.4);
+  border-radius: 5px;
+}
+
+.note-input {
+  width: 300px;
+  color: white;
+  background-color: #374151;
+  border: 1px solid #3b82f6;
+  box-shadow: 0 0 0 2px #3b82f6;
+  padding: 10px;
+  font-size: 14px;
+  border-radius: 5px;
+  position: absolute;
+  outline: none;
+  right: 10px;
+  bottom: 10px;
+}
+
+.hidden {
+  display: none;
+}

@@ -68,22 +68,31 @@ const setBookmarkAttributes = (name, controlsElement, eventListener) => {
   controlElement.addEventListener("click", eventListener);
 };
 
-const addTimestamp = (bookmarks, timestamp) => {
+const addTimestamp = (bookmarks, timestamp, note) => {
   const bookmarkElement = document.createElement("div");
   const timestampElement = document.createElement("div");
   const controlsElement = document.createElement("div");
+  const titleElement = document.createElement("div");
+  const bookmarkInfoElement = document.createElement("div");
+
+  titleElement.innerText = note;
+  titleElement.className = "note";
 
   bookmarkElement.id = `bookmark-${timestamp}`;
   bookmarkElement.className = "bookmark";
   bookmarkElement.setAttribute("timestamp", timestamp);
 
-  timestampElement.innerHTML = convertSecondsToTimeFormat(timestamp);
+  timestampElement.innerText = convertSecondsToTimeFormat(timestamp);
 
   controlsElement.className = "timestamp-controls";
   setBookmarkAttributes("play", controlsElement, onPlay);
   setBookmarkAttributes("trash", controlsElement, onDelete);
 
-  bookmarkElement.appendChild(timestampElement);
+  bookmarkInfoElement.className = "bookmark-info";
+  bookmarkInfoElement.appendChild(titleElement);
+  bookmarkInfoElement.appendChild(timestampElement);
+
+  bookmarkElement.appendChild(bookmarkInfoElement);
   bookmarkElement.appendChild(controlsElement);
   bookmarks.appendChild(bookmarkElement);
 };
@@ -96,7 +105,7 @@ const displayTimestamps = (currTimestamps) => {
   const bookmarks = document.getElementsByClassName("bookmarks")[0];
 
   for (const timestamp of currTimestamps) {
-    addTimestamp(bookmarks, timestamp);
+    addTimestamp(bookmarks, timestamp.timestamp, timestamp.note);
   }
 };
 

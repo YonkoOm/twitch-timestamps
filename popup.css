@@ -4,14 +4,32 @@
   box-sizing: border-box;
 }
 
-h1 {
-  font-size: 20px;
-  margin-bottom: 10px;
+body {
+  background-color: #e7decd;
 }
 
 .container {
-  width: 280px;
+  width: 350px;
   padding: 5px;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: bold;
+  text-align: center;
+}
+
+h1 {
+  font-size: 15px;
+  font-weight: 700;
+  padding: 10px;
+  width: 320px;
+  color: white;
+  background-color: #9146ff;
+  border-radius: 5px;
+  margin-bottom: 10px;
+  text-align: center;
+  justify-self: center;
 }
 
 .bookmarks {
@@ -19,40 +37,51 @@ h1 {
   padding-right: 10px;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 8px;
 }
 
 .bookmark {
   font-size: 14px;
-  border: 2px solid blue;
-  padding: 5px;
-  border-radius: 5px;
+  border: 1px solid #b8ab8a;
+  padding: 6px 10px;
+  border-radius: 8px;
   position: relative;
   overflow: hidden;
   display: flex;
   justify-content: space-between;
+  align-items: center;
 }
 
-.bookmark::before {
-  content: "";
-  position: absolute;
-  height: 100%;
-  width: 2px;
-  background-color: blue;
-  top: 0;
-  left: 0;
+.bookmark-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.note {
+  font-size: 15px;
+  font-weight: 600;
+  color: black;
 }
 
 .timestamp-controls {
   display: flex;
-  gap: 3px;
 }
 
 .control-element {
-  padding: 2px;
+  padding: 4px;
   cursor: pointer;
+  transition: 0.2s ease-in;
 }
 
 .control-element:hover {
-  transform: scale(1.1);
+  background-color: rgba(0, 0, 0, 0.15);
+  border-radius: 5px;
+}
+
+.empty-timestamps {
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  padding: 4px;
 }
