@@ -1,7 +1,5 @@
 import { getActiveTabUrl } from "./utils.js";
 
-// TODO: when the user clicks the bookmark, have a little modal appear allowing them to add a little note about the bookmark
-
 const getVodId = async () => {
   const activeTab = await getActiveTabUrl();
   const match = activeTab.url.match(/twitch\.tv\/videos\/(\d+)/);
