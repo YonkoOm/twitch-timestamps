@@ -1,7 +1,6 @@
-// TODO: need to check for the case where the VOD may be subscribers only (MAYBE)
-// TODO: create a function that grabs the access token
 (() => {
-  const getTwitchStreamer = () => {
+  let currentVodTimestamps = [];
+  const getStreamerUsername = () => {
     const url = window.location.href;
     const match = url.match(/twitch\.tv\/([^\/?]+)$/);
     return match ? match[1] : null;
@@ -14,14 +13,14 @@
   };
 
   const getStreamerID = async () => {
-    const streamer = getTwitchStreamer();
+    const streamer = getStreamerUsername();
     const res = await fetch(`http://localhost:3000/user?login=${streamer}`);
     const { data } = await res.json();
     return data[0].id;
   };
 
   const getLiveStreamData = async () => {
-    const streamer = getTwitchStreamer();
+    const streamer = getStreamerUsername();
     if (!streamer) return null;
 
     const res = await fetch(
@@ -52,7 +51,10 @@
 
     while (left <= right) {
       let mid = Math.floor((left + right) / 2);
-      if (timestamps[mid].timestamp > timestamp.timestamp) {
+      if (timestamps[mid].timestamp === timestamp.timestamp) {
+        alert("Timestamp already saved at this time");
+        return;
+      } else if (timestamps[mid].timestamp > timestamp.timestamp) {
         right = mid - 1;
       } else {
         left = mid + 1;
@@ -62,30 +64,22 @@
     timestamps.splice(left, 0, timestamp);
   };
 
-  const addTimestamp = async (vodId, timestamp, note) => {
+  const storeTimestampInfo = async (vodId, timestamp, note) => {
     const res = await chrome.storage.local.get(["timestamps"]);
     const timestamps = res.timestamps || {};
     timestamps[vodId] = timestamps[vodId] || [];
+
     insertSorted(timestamps[vodId], { timestamp, note });
 
     await chrome.storage.local.set({ timestamps });
-
-    console.log("Save Timestamps");
-    const response = await chrome.storage.local.get(["timestamps"]);
-    console.log(response.timestamps || []);
   };
 
-  const timestamp = async (note, streamInfo) => {
-    console.log("IN TIMESTAMP NOTE: " + note);
-
-    if (streamInfo.liveStreamData) {
-      const { liveStreamData, vodId } = streamInfo;
-      const startedAt = new Date(liveStreamData.started_at);
+  const getTimestamp = (streamStartTime) => {
+    if (streamStartTime) {
+      const liveStreamStartTime = new Date(streamStartTime);
       const currentTime = new Date();
 
-      const timestamp = currentTime - startedAt;
-
-      console.log(vodId);
+      const timestamp = (currentTime - liveStreamStartTime) / 1000;
 
       const hours = Math.floor(timestamp / (1000 * 60 * 60));
       const minutes = Math.floor((timestamp % (1000 * 60 * 60)) / (1000 * 60));
@@ -93,12 +87,9 @@
 
       console.log(`${hours} hours, ${minutes} minutes, ${seconds} seconds`);
 
-      await addTimestamp(vodId, timestamp / 1000, note);
+      return timestamp;
     } else {
       const video = document.querySelector("video");
-      const { vodId } = streamInfo;
-
-      console.log(vodId);
 
       const timestamp = video.currentTime;
 
@@ -108,75 +99,95 @@
 
       console.log(`${hours} hours, ${minutes} minutes, ${seconds} seconds`);
 
-      await addTimestamp(vodId, timestamp, note);
+      return timestamp;
     }
   };
 
-  const addVideoPlayerButton = () => {
+  const addBookmarkButton = () => {
     const oldButton = document.getElementsByClassName("bookmark");
     if (oldButton.length > 0) {
       oldButton[0].remove();
     }
 
-    const videoPlayer = document.getElementsByClassName(
+    const videoPlayerControls = document.getElementsByClassName(
       "player-controls__right-control-group",
     );
-    if (videoPlayer.length === 0) return null;
+    if (videoPlayerControls.length === 0) return null; // checks for the case where the user in the home page of the streamer (url contains their username)
 
     const button = document.createElement("button");
     const img = document.createElement("img");
     img.src = chrome.runtime.getURL("assets/bookmark-white.svg");
     button.className = "bookmark";
     button.appendChild(img);
-    videoPlayer[0].append(button);
+    videoPlayerControls[0].append(button);
 
     return button;
   };
 
-  const hideInputField = () => {
+  const showNoteField = () => {
     const inputField = document.getElementsByClassName("note-input")[0];
-    inputField.classList.toggle("hidden");
+    inputField.classList.remove("hidden");
+    inputField.focus();
+  };
+
+  const hideNoteField = () => {
+    const inputField = document.getElementsByClassName("note-input")[0];
+    inputField.classList.add("hidden");
     inputField.value = "";
   };
 
-  const showInputField = () => {
-    const inputField = document.getElementsByClassName("note-input")[0];
-    inputField.classList.toggle("hidden");
-    inputField.focus();
+  const saveTimestampWithNote = async (note, liveStreamInfo) => {
+    const timestamp = getTimestamp(liveStreamInfo.startedAt);
+    await storeTimestampInfo(liveStreamInfo.vodId, timestamp, note);
   };
 
-  const note = (liveStreamData) => {
-    if (document.getElementsByClassName("note-input").length > 0) {
-      showInputField();
-      return;
+  const handleNoteInput = async (e, liveStreamData) => {
+    if (e.key === "Enter") {
+      await saveTimestampWithNote(e.target.value.trim(), liveStreamData);
+      hideNoteField();
+    } else if (e.key === "Escape") {
+      hideNoteField();
+    }
+  };
+
+  const setupNoteField = (liveStreamInfo) => {
+    let noteField = document.querySelector(".note-input");
+    if (!noteField) {
+      noteField = document.createElement("input");
+      noteField.classList.add("note-input", "hidden");
+      noteField.placeholder = "enter to save or escape to exit";
+      noteField.type = "text";
+      document.getElementsByClassName("video-player")[0].appendChild(noteField);
+    } else {
+      noteField.removeEventListener("keydown", noteField.keydownHandler);
+      noteField.removeEventListener("blur", noteField.blurHandler);
     }
 
-    const inputField = document.createElement("input");
-    inputField.classList.add("note-input");
-    inputField.placeholder = "enter to save or escape to exit";
-    inputField.type = "text";
+    console.log(liveStreamInfo);
+    noteField.keydownHandler = (e) => handleNoteInput(e, liveStreamInfo);
 
-    document.getElementsByClassName("video-player")[0].appendChild(inputField);
-
-    inputField.focus();
-
-    inputField.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        const note = inputField.value.trim();
-        timestamp(note, liveStreamData);
-        hideInputField();
-      } else if (e.key === "Escape") {
-        hideInputField();
+    noteField.blurHandler = () => {
+      if (!noteField.classList.contains("hidden")) {
+        hideNoteField();
       }
-    });
+    };
 
-    inputField.addEventListener("blur", () => {
-      if (!inputField.classList.contains("hidden")) hideInputField();
+    noteField.addEventListener("keydown", noteField.keydownHandler);
+    noteField.addEventListener("blur", noteField.blurHandler);
+
+    showNoteField();
+  };
+
+  const createBookmarkButton = (vodId, startedAt = null) => {
+    const button = addBookmarkButton();
+    if (!button) return;
+
+    button.addEventListener("click", () => {
+      setupNoteField({ vodId, startedAt });
     });
   };
 
-  // adds button if we are in a livestream and a vod for that livestream exists or a vod itself
-  const bookmark = async () => {
+  const setupBookmarkButton = async () => {
     const liveStreamData = await getLiveStreamData();
     if (liveStreamData) {
       console.log("Watching Livestream");
@@ -191,29 +202,20 @@
         return;
       }
       console.log(vod);
-
-      const button = addVideoPlayerButton();
-      if (!button) return;
-
-      button.addEventListener("click", () => {
-        note({ liveStreamData: liveStreamData, vodId: vod.id });
-      });
+      createBookmarkButton(vod.id, liveStreamData.started_at);
     } else {
       const vodId = getVodId();
       if (!vodId) return;
 
+      console.log(vodId);
       console.log("Watching VOD");
-      const button = addVideoPlayerButton();
-      if (!button) return;
 
-      button.addEventListener("click", () => {
-        note({ vodId });
-      });
+      createBookmarkButton(vodId);
     }
   };
 
   const observer = new MutationObserver(() => {
-    bookmark();
+    setupBookmarkButton();
   });
 
   // this handles the weird case where if the user is live streaming and their username is clicked, the video player stays in the background on the same url, so when the video player is clicked and  brought to the foreground, the player controls are reset
@@ -226,7 +228,7 @@
     if (request.type === "URLChange") {
       console.log("URL Changed: ", request.url);
       // chrome.storage.local.clear();
-      bookmark();
+      setupBookmarkButton();
     } else if (request.type === "PLAY") {
       const video = document.querySelector("video");
       video.currentTime = request.time;
