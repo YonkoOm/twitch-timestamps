@@ -105,13 +105,13 @@
   };
 
   const showNoteField = () => {
-    const inputField = document.getElementsByClassName("note-input")[0];
+    const inputField = document.querySelector(".note-input");
     inputField.classList.remove("hidden");
     inputField.focus();
   };
 
   const hideNoteField = () => {
-    const inputField = document.getElementsByClassName("note-input")[0];
+    const inputField = document.querySelector(".note-input");
     inputField.classList.add("hidden");
     inputField.value = "";
   };
@@ -123,7 +123,7 @@
       noteField.classList.add("note-input", "hidden");
       noteField.placeholder = "enter to save or escape to exit";
       noteField.type = "text";
-      document.getElementsByClassName("video-player")[0].appendChild(noteField);
+      document.querySelector(".video-player")?.appendChild(noteField);
     } else {
       noteField.removeEventListener("keydown", noteField.keydownHandler);
       noteField.removeEventListener("blur", noteField.blurHandler);
@@ -152,61 +152,55 @@
     showNoteField();
   };
 
-  const addBookmarkButton = () => {
-    const oldButton = document.getElementsByClassName("bookmark");
-    if (oldButton.length > 0) {
-      oldButton[0].remove();
-    }
+  const insertBookmarkButton = () => {
+    if (document.querySelector(".bookmark")) return;
 
-    const videoPlayerControls = document.getElementsByClassName(
-      "player-controls__right-control-group",
+    const videoPlayerControls = document.querySelector(
+      ".player-controls__right-control-group",
     );
-    if (videoPlayerControls.length === 0) return null; // checks for the case where the user in the home page of the streamer (url contains their username)
+    if (!videoPlayerControls) return null; // checks for the case where the user in the home page of the streamer (url contains their username but stream in the background)
 
-    const button = document.createElement("button");
-    button.className = "bookmark";
+    const bookmarkButton = document.createElement("button");
+    bookmarkButton.className = "bookmark";
 
     const img = document.createElement("img");
     img.src = chrome.runtime.getURL("assets/bookmark-white.svg");
 
-    button.appendChild(img);
-    videoPlayerControls[0].append(button);
+    bookmarkButton.appendChild(img);
+    videoPlayerControls.appendChild(bookmarkButton);
 
-    button.addEventListener("click", () => {
+    bookmarkButton.addEventListener("click", () => {
       setupNoteField();
     });
+
+    return bookmarkButton;
   };
 
-  const setupBookmarkButton = async () => {
+  const removeBookmarkButton = () =>
+    document.querySelector(".bookmark")?.remove();
+
+  const initializeStreamData = async () => {
+    vodId = liveStreamStartTime = null;
     const liveStreamData = await getLiveStreamData();
+
     if (liveStreamData) {
       const vod = await getLiveStreamVod(liveStreamData.id);
-
-      if (!vod) {
-        const bookmarkButton = document.getElementsByClassName("bookmark");
-        if (bookmarkButton.length > 0) {
-          bookmarkButton[0].remove();
-        }
-        console.log("VOD not available");
-        return;
-      }
+      if (!vod) return;
 
       vodId = vod.id;
       liveStreamStartTime = liveStreamData.started_at;
-
-      addBookmarkButton();
     } else {
       vodId = getVodId();
-      if (!vodId) return;
-
-      liveStreamStartTime = null;
-
-      addBookmarkButton();
     }
   };
 
-  const observer = new MutationObserver(() => {
-    setupBookmarkButton();
+  const observer = new MutationObserver(async () => {
+    await initializeStreamData();
+    if (vodId || liveStreamStartTime) {
+      insertBookmarkButton();
+    } else {
+      removeBookmarkButton();
+    }
   });
 
   // this handles the weird case where if the user is live streaming and their username is clicked, the video player stays in the background on the same url, so when the video player is clicked and  brought to the foreground, the player controls are reset
@@ -219,7 +213,14 @@
     if (request.type === "URLChange") {
       console.log("URL Changed: ", request.url);
       // chrome.storage.local.clear();
-      setupBookmarkButton();
+      (async () => {
+        await initializeStreamData();
+        if (vodId || liveStreamStartTime) {
+          insertBookmarkButton();
+        } else {
+          removeBookmarkButton();
+        }
+      })();
     } else if (request.type === "PLAY") {
       const video = document.querySelector("video");
       video.currentTime = request.time;
