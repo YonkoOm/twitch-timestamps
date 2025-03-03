@@ -41,7 +41,7 @@ h1 {
 }
 
 .bookmark {
-  font-size: 14px;
+  font-size: 13px;
   border: 1px solid #b8ab8a;
   padding: 6px 10px;
   border-radius: 8px;
@@ -59,7 +59,7 @@ h1 {
 }
 
 .note {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   color: black;
 }
