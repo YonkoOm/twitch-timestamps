@@ -1,4 +1,6 @@
 (() => {
+  let liveStreamStartTime, vodId;
+
   const getStreamerUsername = () => {
     const url = window.location.href;
     const match = url.match(/twitch\.tv\/([^\/?]+)$/);
@@ -63,7 +65,7 @@
     timestamps.splice(left, 0, timestamp);
   };
 
-  const storeTimestampInfo = async (vodId, timestamp, note) => {
+  const storeTimestampWithNote = async (timestamp, note) => {
     const res = await chrome.storage.local.get(["timestamps"]);
     const timestamps = res.timestamps || {};
     timestamps[vodId] = timestamps[vodId] || [];
@@ -73,16 +75,16 @@
     await chrome.storage.local.set({ timestamps });
   };
 
-  const getTimestamp = (streamStartTime) => {
-    if (streamStartTime) {
-      const liveStreamStartTime = new Date(streamStartTime);
+  const getTimestamp = () => {
+    if (liveStreamStartTime) {
+      const startTime = new Date(liveStreamStartTime);
       const currentTime = new Date();
 
-      const timestamp = (currentTime - liveStreamStartTime) / 1000;
+      const timestamp = (currentTime - startTime) / 1000;
 
-      const hours = Math.floor(timestamp / (1000 * 60 * 60));
-      const minutes = Math.floor((timestamp % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((timestamp % (1000 * 60)) / 1000);
+      const hours = Math.floor(timestamp / 3600);
+      const minutes = Math.floor((timestamp % 3600) / 60);
+      const seconds = Math.floor(timestamp % 60);
 
       console.log(`${hours} hours, ${minutes} minutes, ${seconds} seconds`);
 
@@ -102,27 +104,6 @@
     }
   };
 
-  const addBookmarkButton = () => {
-    const oldButton = document.getElementsByClassName("bookmark");
-    if (oldButton.length > 0) {
-      oldButton[0].remove();
-    }
-
-    const videoPlayerControls = document.getElementsByClassName(
-      "player-controls__right-control-group",
-    );
-    if (videoPlayerControls.length === 0) return null; // checks for the case where the user in the home page of the streamer (url contains their username)
-
-    const button = document.createElement("button");
-    const img = document.createElement("img");
-    img.src = chrome.runtime.getURL("assets/bookmark-white.svg");
-    button.className = "bookmark";
-    button.appendChild(img);
-    videoPlayerControls[0].append(button);
-
-    return button;
-  };
-
   const showNoteField = () => {
     const inputField = document.getElementsByClassName("note-input")[0];
     inputField.classList.remove("hidden");
@@ -135,21 +116,7 @@
     inputField.value = "";
   };
 
-  const saveTimestampWithNote = async (note, liveStreamInfo) => {
-    const timestamp = getTimestamp(liveStreamInfo.startedAt);
-    await storeTimestampInfo(liveStreamInfo.vodId, timestamp, note);
-  };
-
-  const handleNoteKeydown = async (e, liveStreamData) => {
-    if (e.key === "Enter") {
-      await saveTimestampWithNote(e.target.value.trim(), liveStreamData);
-      hideNoteField();
-    } else if (e.key === "Escape") {
-      hideNoteField();
-    }
-  };
-
-  const setupNoteField = (liveStreamInfo) => {
+  const setupNoteField = () => {
     let noteField = document.querySelector(".note-input");
     if (!noteField) {
       noteField = document.createElement("input");
@@ -162,8 +129,16 @@
       noteField.removeEventListener("blur", noteField.blurHandler);
     }
 
-    console.log(liveStreamInfo);
-    noteField.keydownHandler = (e) => handleNoteKeydown(e, liveStreamInfo);
+    noteField.keydownHandler = async (e) => {
+      if (e.key === "Enter") {
+        const note = e.target.value.trim();
+        const timestamp = getTimestamp();
+        await storeTimestampWithNote(timestamp, note);
+        hideNoteField();
+      } else if (e.key === "Escape") {
+        hideNoteField();
+      }
+    };
 
     noteField.blurHandler = () => {
       if (!noteField.classList.contains("hidden")) {
@@ -177,19 +152,34 @@
     showNoteField();
   };
 
-  const createBookmarkButton = (vodId, startedAt = null) => {
-    const button = addBookmarkButton();
-    if (!button) return;
+  const addBookmarkButton = () => {
+    const oldButton = document.getElementsByClassName("bookmark");
+    if (oldButton.length > 0) {
+      oldButton[0].remove();
+    }
+
+    const videoPlayerControls = document.getElementsByClassName(
+      "player-controls__right-control-group",
+    );
+    if (videoPlayerControls.length === 0) return null; // checks for the case where the user in the home page of the streamer (url contains their username)
+
+    const button = document.createElement("button");
+    button.className = "bookmark";
+
+    const img = document.createElement("img");
+    img.src = chrome.runtime.getURL("assets/bookmark-white.svg");
+
+    button.appendChild(img);
+    videoPlayerControls[0].append(button);
 
     button.addEventListener("click", () => {
-      setupNoteField({ vodId, startedAt });
+      setupNoteField();
     });
   };
 
   const setupBookmarkButton = async () => {
     const liveStreamData = await getLiveStreamData();
     if (liveStreamData) {
-      console.log("Watching Livestream");
       const vod = await getLiveStreamVod(liveStreamData.id);
 
       if (!vod) {
@@ -201,14 +191,17 @@
         return;
       }
 
-      createBookmarkButton(vod.id, liveStreamData.started_at);
+      vodId = vod.id;
+      liveStreamStartTime = liveStreamData.started_at;
+
+      addBookmarkButton();
     } else {
-      const vodId = getVodId();
+      vodId = getVodId();
       if (!vodId) return;
 
-      console.log("Watching VOD");
+      liveStreamStartTime = null;
 
-      createBookmarkButton(vodId);
+      addBookmarkButton();
     }
   };
 
@@ -233,11 +226,6 @@
     } else if (request.type === "DELETE") {
       (async () => {
         const res = await chrome.storage.local.get(["timestamps"]);
-        const vodId = getVodId();
-        if (!vodId) {
-          sendResponse([]);
-          return;
-        }
 
         const timestamps = res.timestamps;
         timestamps[vodId] = timestamps[vodId].filter(
