@@ -6,46 +6,6 @@ const getVodId = async () => {
   return match ? match[1] : null;
 };
 
-const displayEmpty = () => {
-  const bookmarks = document.getElementsByClassName("bookmarks")[0];
-  const divElement = document.createElement("div");
-  divElement.className = "empty-timestamps";
-
-  divElement.innerText = "Add timestamps to see them here :)";
-
-  bookmarks.appendChild(divElement);
-};
-
-const onPlay = async (e) => {
-  const activeTab = await getActiveTabUrl();
-  const timestamp = e.target.parentNode.parentNode.getAttribute("timestamp");
-  chrome.tabs.sendMessage(activeTab.id, {
-    type: "PLAY",
-    time: Number(timestamp),
-  });
-};
-
-const onDelete = async (e) => {
-  const activeTab = await getActiveTabUrl();
-  const timestamp = e.target.parentNode.parentNode.getAttribute("timestamp");
-
-  const bookmark = document.getElementById(`bookmark-${timestamp}`);
-  bookmark.remove();
-
-  await chrome.tabs.sendMessage(activeTab.id, {
-    type: "DELETE",
-    time: Number(timestamp),
-  });
-
-  const vodId = await getVodId();
-  const res = await chrome.storage.local.get(["timestamps"]);
-  const timestamps = res.timestamps[vodId] || [];
-
-  if (timestamps.length === 0) {
-    displayEmpty();
-  }
-};
-
 const convertSecondsToTimeFormat = (timestamp) => {
   const hours = Math.floor(timestamp / (60 * 60));
   const minutes = Math.floor((timestamp % (60 * 60)) / 60);
@@ -95,16 +55,54 @@ const addTimestamp = (bookmarks, timestamp, note) => {
   bookmarks.appendChild(bookmarkElement);
 };
 
+const displayEmpty = (bookmarks) => {
+  const divElement = document.createElement("div");
+  divElement.className = "empty-timestamps";
+
+  divElement.innerText = "Add timestamps to see them here :)";
+
+  bookmarks.appendChild(divElement);
+};
+
 const displayTimestamps = (currTimestamps) => {
-  if (currTimestamps.length === 0) {
-    displayEmpty();
-  }
-
   const bookmarks = document.getElementsByClassName("bookmarks")[0];
+  // bookmarks.style.height = "auto";
+  bookmarks.innerHTML = "";
 
-  for (const timestamp of currTimestamps) {
-    addTimestamp(bookmarks, timestamp.timestamp, timestamp.note);
+  console.log(currTimestamps);
+  if (currTimestamps.length > 0) {
+    for (const timestamp of currTimestamps) {
+      addTimestamp(bookmarks, timestamp.timestamp, timestamp.note);
+    }
+  } else {
+    displayEmpty(bookmarks);
   }
+};
+
+const onPlay = async (e) => {
+  const activeTab = await getActiveTabUrl();
+  const timestamp = e.target.parentNode.parentNode.getAttribute("timestamp");
+  await chrome.tabs.sendMessage(activeTab.id, {
+    type: "PLAY",
+    time: Number(timestamp),
+  });
+};
+
+const onDelete = async (e) => {
+  const activeTab = await getActiveTabUrl();
+  const timestamp = e.target.parentNode.parentNode.getAttribute("timestamp");
+
+  const timestampToDelete = document.getElementById(`bookmark-${timestamp}`);
+  timestampToDelete.parentNode.removeChild(timestampToDelete);
+
+  chrome.tabs.sendMessage(
+    activeTab.id,
+    {
+      type: "DELETE",
+      time: Number(timestamp),
+    },
+    displayTimestamps,
+  );
 };
 
 // Wait until the DOM is fully loaded
@@ -114,7 +112,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (vodId) {
     const res = await chrome.storage.local.get(["timestamps"]);
     const timestamps = res.timestamps[vodId] || [];
-    console.log(timestamps);
     displayTimestamps(timestamps);
   } else {
     const container = document.getElementsByClassName("container")[0];

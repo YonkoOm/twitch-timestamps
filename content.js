@@ -1,5 +1,4 @@
 (() => {
-  let currentVodTimestamps = [];
   const getStreamerUsername = () => {
     const url = window.location.href;
     const match = url.match(/twitch\.tv\/([^\/?]+)$/);
@@ -141,7 +140,7 @@
     await storeTimestampInfo(liveStreamInfo.vodId, timestamp, note);
   };
 
-  const handleNoteInput = async (e, liveStreamData) => {
+  const handleNoteKeydown = async (e, liveStreamData) => {
     if (e.key === "Enter") {
       await saveTimestampWithNote(e.target.value.trim(), liveStreamData);
       hideNoteField();
@@ -164,7 +163,7 @@
     }
 
     console.log(liveStreamInfo);
-    noteField.keydownHandler = (e) => handleNoteInput(e, liveStreamInfo);
+    noteField.keydownHandler = (e) => handleNoteKeydown(e, liveStreamInfo);
 
     noteField.blurHandler = () => {
       if (!noteField.classList.contains("hidden")) {
@@ -201,13 +200,12 @@
         console.log("VOD not available");
         return;
       }
-      console.log(vod);
+
       createBookmarkButton(vod.id, liveStreamData.started_at);
     } else {
       const vodId = getVodId();
       if (!vodId) return;
 
-      console.log(vodId);
       console.log("Watching VOD");
 
       createBookmarkButton(vodId);
@@ -224,7 +222,7 @@
     subtree: true,
   });
 
-  chrome.runtime.onMessage.addListener(async (request) => {
+  chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
     if (request.type === "URLChange") {
       console.log("URL Changed: ", request.url);
       // chrome.storage.local.clear();
@@ -233,17 +231,24 @@
       const video = document.querySelector("video");
       video.currentTime = request.time;
     } else if (request.type === "DELETE") {
-      console.log("IN DELETE");
-      const res = await chrome.storage.local.get(["timestamps"]);
-      const vodId = getVodId();
-      const timestamps = res.timestamps;
-      timestamps[vodId] = timestamps[vodId].filter(
-        ({ timestamp }) => timestamp !== request.time,
-      );
+      (async () => {
+        const res = await chrome.storage.local.get(["timestamps"]);
+        const vodId = getVodId();
+        if (!vodId) {
+          sendResponse([]);
+          return;
+        }
 
-      await chrome.storage.local.set({
-        timestamps,
-      });
+        const timestamps = res.timestamps;
+        timestamps[vodId] = timestamps[vodId].filter(
+          ({ timestamp }) => timestamp !== request.time,
+        );
+
+        await chrome.storage.local.set({ timestamps });
+        sendResponse(timestamps[vodId]);
+      })();
+
+      return true; // tells chrome we want to send a response asynchronously
     }
   });
 })();
