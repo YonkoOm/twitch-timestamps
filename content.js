@@ -1,6 +1,5 @@
 (() => {
   let liveStreamStartTime, vodId;
-  let bookmarkButton;
 
   const getStreamerUsername = () => {
     const url = window.location.href;
@@ -154,14 +153,14 @@
   };
 
   const insertBookmarkButton = () => {
-    if (bookmarkButton) return;
-
+    const bookmarkButtonExists = document.querySelector(".bookmark");
     const videoPlayerControls = document.querySelector(
       ".player-controls__right-control-group",
     );
-    if (!videoPlayerControls) return; // checks for the case where the user in the home page of the streamer (url contains their username but stream in the background)
 
-    bookmarkButton = document.createElement("button");
+    if (bookmarkButtonExists || !videoPlayerControls) return; // videoPlayerControls checks for the case where the user in the home page of the streamer (url contains their username but stream in the background)
+
+    const bookmarkButton = document.createElement("button");
     bookmarkButton.className = "bookmark";
 
     const img = document.createElement("img");
@@ -175,7 +174,6 @@
 
   const removeBookmarkButton = () => {
     document.querySelector(".bookmark")?.remove();
-    bookmarkButton = null;
   };
 
   const initializeStreamData = async () => {
