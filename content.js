@@ -130,10 +130,10 @@
       noteField.removeEventListener("blur", noteField.blurHandler);
     }
 
+    const timestamp = getTimestamp();
     noteField.keydownHandler = async (e) => {
       if (e.key === "Enter") {
         const note = e.target.value.trim();
-        const timestamp = getTimestamp();
         await storeTimestampWithNote(timestamp, note);
         hideNoteField();
       } else if (e.key === "Escape") {
