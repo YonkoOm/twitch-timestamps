@@ -1,5 +1,6 @@
 (() => {
   let liveStreamStartTime, vodId;
+  let bookmarkButton;
 
   const getStreamerUsername = () => {
     const url = window.location.href;
@@ -153,31 +154,29 @@
   };
 
   const insertBookmarkButton = () => {
-    if (document.querySelector(".bookmark")) return;
+    if (bookmarkButton) return;
 
     const videoPlayerControls = document.querySelector(
       ".player-controls__right-control-group",
     );
-    if (!videoPlayerControls) return null; // checks for the case where the user in the home page of the streamer (url contains their username but stream in the background)
+    if (!videoPlayerControls) return; // checks for the case where the user in the home page of the streamer (url contains their username but stream in the background)
 
-    const bookmarkButton = document.createElement("button");
+    bookmarkButton = document.createElement("button");
     bookmarkButton.className = "bookmark";
 
     const img = document.createElement("img");
     img.src = chrome.runtime.getURL("assets/bookmark-white.svg");
 
     bookmarkButton.appendChild(img);
+    bookmarkButton.addEventListener("click", setupNoteField);
+
     videoPlayerControls.appendChild(bookmarkButton);
-
-    bookmarkButton.addEventListener("click", () => {
-      setupNoteField();
-    });
-
-    return bookmarkButton;
   };
 
-  const removeBookmarkButton = () =>
+  const removeBookmarkButton = () => {
     document.querySelector(".bookmark")?.remove();
+    bookmarkButton = null;
+  };
 
   const initializeStreamData = async () => {
     vodId = liveStreamStartTime = null;
@@ -194,17 +193,24 @@
     }
   };
 
-  const observer = new MutationObserver(async () => {
-    await initializeStreamData();
+  const updateBookmarkButtonVisibility = async () => {
     if (vodId || liveStreamStartTime) {
       insertBookmarkButton();
     } else {
       removeBookmarkButton();
     }
-  });
+  };
+
+  const initStreamAndButton = async () => {
+    await initializeStreamData();
+    updateBookmarkButtonVisibility();
+  };
+
+  const observer = new MutationObserver(initStreamAndButton);
+  const title = document.querySelector("title");
 
   // this handles the weird case where if the user is live streaming and their username is clicked, the video player stays in the background on the same url, so when the video player is clicked and  brought to the foreground, the player controls are reset
-  observer.observe(document.querySelector("title"), {
+  observer.observe(title, {
     childList: true,
     subtree: true,
   });
@@ -213,14 +219,7 @@
     if (request.type === "URLChange") {
       console.log("URL Changed: ", request.url);
       // chrome.storage.local.clear();
-      (async () => {
-        await initializeStreamData();
-        if (vodId || liveStreamStartTime) {
-          insertBookmarkButton();
-        } else {
-          removeBookmarkButton();
-        }
-      })();
+      initStreamAndButton();
     } else if (request.type === "PLAY") {
       const video = document.querySelector("video");
       video.currentTime = request.time;
@@ -239,5 +238,6 @@
 
       return true; // tells chrome we want to send a response asynchronously
     }
+    return false;
   });
 })();
