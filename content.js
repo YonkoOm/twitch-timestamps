@@ -237,6 +237,15 @@
       })();
 
       return true; // tells chrome we want to send a response asynchronously
+    } else if (request.type === "CLEAR_VOD") {
+      (async () => {
+        const res = await chrome.storage.local.get(["timestamps"]);
+
+        const timestamps = res.timestamps;
+        delete timestamps[vodId];
+
+        await chrome.storage.local.set({ timestamps });
+      })();
     }
     return false;
   });

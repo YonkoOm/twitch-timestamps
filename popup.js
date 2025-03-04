@@ -26,6 +26,15 @@ const setBookmarkAttributes = (name, controlsElement, eventListener) => {
   controlElement.addEventListener("click", eventListener);
 };
 
+const clearVodTimestampsButton = () => {
+  const buttonElement = document.createElement("button");
+  buttonElement.innerText = "CLEAR ALL";
+  buttonElement.className = "clear-all";
+
+  document.querySelector(".bookmarks-container").prepend(buttonElement);
+  buttonElement.addEventListener("click", onClearVod);
+};
+
 const addTimestamp = (bookmarks, timestamp, note) => {
   const bookmarkElement = document.createElement("div");
   const timestampElement = document.createElement("div");
@@ -57,7 +66,7 @@ const addTimestamp = (bookmarks, timestamp, note) => {
 
 const displayEmpty = (bookmarks) => {
   const divElement = document.createElement("div");
-  divElement.className = "empty-timestamps";
+  divElement.className = "empty";
 
   divElement.innerText = "Add timestamps to see them here :)";
 
@@ -65,16 +74,19 @@ const displayEmpty = (bookmarks) => {
 };
 
 const displayTimestamps = (currTimestamps) => {
-  const bookmarks = document.getElementsByClassName("bookmarks")[0];
-  // bookmarks.style.height = "auto";
+  const bookmarks = document.querySelector(".bookmarks");
   bookmarks.innerHTML = "";
 
   console.log(currTimestamps);
   if (currTimestamps.length > 0) {
+    const button = document.querySelector(".clear-all");
+    if (!button) clearVodTimestampsButton();
+
     for (const timestamp of currTimestamps) {
       addTimestamp(bookmarks, timestamp.timestamp, timestamp.note);
     }
   } else {
+    document.querySelector("button")?.remove();
     displayEmpty(bookmarks);
   }
 };
@@ -105,7 +117,18 @@ const onDelete = async (e) => {
   );
 };
 
-// Wait until the DOM is fully loaded
+const onClearVod = async () => {
+  const activeTab = await getActiveTabUrl();
+
+  await chrome.tabs.sendMessage(
+    activeTab.id,
+    {
+      type: "CLEAR_VOD",
+    },
+    () => displayTimestamps([]),
+  );
+};
+
 document.addEventListener("DOMContentLoaded", async () => {
   const vodId = await getVodId();
 
@@ -114,7 +137,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const timestamps = res.timestamps[vodId] || [];
     displayTimestamps(timestamps);
   } else {
-    const container = document.getElementsByClassName("container")[0];
+    const container = document.querySelector(".container");
     container.innerHTML = '<div class="title">This is not a VOD</div>';
   }
 });
