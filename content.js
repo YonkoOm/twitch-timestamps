@@ -1,5 +1,5 @@
 (() => {
-  let liveStreamStartTime, vodId;
+  let liveStreamStartTime, vodId, username;
 
   const getStreamerUsername = () => {
     const url = window.location.href;
@@ -11,6 +11,18 @@
     const url = window.location.href;
     const match = url.match(/twitch\.tv\/videos\/(\d+)/);
     return match ? match[1] : null;
+  };
+
+  const getVodStreamer = async () => {
+    const res = await fetch(`http://localhost:3000/vod?id=${vodId}`);
+
+    if (!res.ok) {
+      console.error("Failed to fetch vod");
+      return null;
+    }
+
+    const { data } = await res.json();
+    return data[0].user_login;
   };
 
   const getStreamerID = async () => {
@@ -27,7 +39,6 @@
     const res = await fetch(
       `http://localhost:3000/livestream?username=${streamer}`,
     );
-    const { data } = await res.json();
 
     return data.length > 0 ? data[0] : null;
   };
@@ -66,13 +77,13 @@
   };
 
   const storeTimestampWithNote = async (timestamp, note) => {
-    const res = await chrome.storage.local.get(["timestamps"]);
-    const timestamps = res.timestamps || {};
-    timestamps[vodId] = timestamps[vodId] || [];
+    const res = await chrome.storage.local.get([username]);
+    const vods = res[username] ?? {};
+    vods[vodId] = vods[vodId] ?? [];
 
-    insertSorted(timestamps[vodId], { timestamp, note });
+    insertSorted(vods[vodId], { timestamp, note });
 
-    await chrome.storage.local.set({ timestamps });
+    await chrome.storage.local.set({ [username]: vods });
   };
 
   const getTimestamp = () => {
@@ -177,22 +188,28 @@
   };
 
   const initializeStreamData = async () => {
-    vodId = liveStreamStartTime = null;
-    const liveStreamData = await getLiveStreamData();
+    vodId = liveStreamStartTime = username = null;
 
-    if (liveStreamData) {
-      const vod = await getLiveStreamVod(liveStreamData.id);
-      if (!vod) return;
-
-      vodId = vod.id;
-      liveStreamStartTime = liveStreamData.started_at;
+    vodId = getVodId();
+    // check if they watching vod first
+    if (vodId) {
+      username = await getVodStreamer();
     } else {
-      vodId = getVodId();
+      const liveStreamData = await getLiveStreamData();
+      if (liveStreamData) {
+        console.log(liveStreamData);
+        const vod = await getLiveStreamVod(liveStreamData.id);
+        if (!vod) return;
+
+        vodId = vod.id;
+        liveStreamStartTime = liveStreamData.started_at;
+        username = liveStreamData.user_login;
+      }
     }
   };
 
   const updateBookmarkButtonVisibility = async () => {
-    if (vodId || liveStreamStartTime) {
+    if (username) {
       insertBookmarkButton();
     } else {
       removeBookmarkButton();
@@ -218,32 +235,43 @@
       console.log("URL Changed: ", request.url);
       // chrome.storage.local.clear();
       initStreamAndButton();
+    } else if (request.type === "STREAM_DATA") {
+      sendResponse({ vodId, username, liveStreamStartTime });
     } else if (request.type === "PLAY") {
       const video = document.querySelector("video");
       video.currentTime = request.time;
     } else if (request.type === "DELETE") {
       (async () => {
-        const res = await chrome.storage.local.get(["timestamps"]);
+        const res = await chrome.storage.local.get([username]);
 
-        const timestamps = res.timestamps;
-        timestamps[vodId] = timestamps[vodId].filter(
+        const vods = res[username];
+        vods[vodId] = vods[vodId].filter(
           ({ timestamp }) => timestamp !== request.time,
         );
 
-        await chrome.storage.local.set({ timestamps });
-        sendResponse(timestamps[vodId]);
+        if (vods[vodId].length === 0) {
+          chrome.storage.local.remove([username]);
+          sendResponse([]);
+        } else {
+          await chrome.storage.local.set({ [username]: vods });
+          sendResponse(vods[vodId]);
+        }
       })();
 
       return true; // tells chrome we want to send a response asynchronously
     } else if (request.type === "CLEAR_VOD") {
       (async () => {
-        const res = await chrome.storage.local.get(["timestamps"]);
+        const res = await chrome.storage.local.get([username]);
 
-        const timestamps = res.timestamps;
-        delete timestamps[vodId];
+        const vods = res[username];
+        delete vods[vodId];
 
-        await chrome.storage.local.set({ timestamps });
+        await chrome.storage.local.set({ [username]: vods });
+        sendResponse([]);
       })();
+      return true;
+    } else if (request.type === "CLEAR_VOD_LINKS") {
+      chrome.storage.local.remove([username]);
     }
     return false;
   });
