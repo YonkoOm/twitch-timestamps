@@ -14,7 +14,9 @@
   };
 
   const getVodStreamer = async () => {
-    const res = await fetch(`http://localhost:3000/vod?id=${vodId}`);
+    const res = await fetch(
+      `https://twitch-timestamps.vercel.app/vod?id=${vodId}`,
+    );
 
     if (!res.ok) {
       console.error("Failed to fetch vod");
@@ -27,25 +29,60 @@
 
   const getStreamerID = async () => {
     const streamer = getStreamerUsername();
-    const res = await fetch(`http://localhost:3000/user?login=${streamer}`);
+    if (!streamer) {
+      return null;
+    }
+
+    const res = await fetch(
+      `https://twitch-timestamps.vercel.app/streamer?login=${streamer}`,
+    );
+
+    if (!res.ok) {
+      console.error("Failed to fetch streamer's id");
+      return null;
+    }
+
     const { data } = await res.json();
     return data[0].id;
   };
 
+  // return streamer data if they are live, otherwise if invalid endpoint, return null
   const getLiveStreamData = async () => {
     const streamer = getStreamerUsername();
-    if (!streamer) return null;
+    if (!streamer) {
+      return null;
+    }
 
     const res = await fetch(
-      `http://localhost:3000/livestream?username=${streamer}`,
+      `https://twitch-timestamps.vercel.app/livestream?username=${streamer}`,
     );
 
+    if (!res.ok) {
+      console.error(
+        "Failed to fetch livestream data with status code: " + res.status,
+      );
+      return null;
+    }
+
+    const { data } = await res.json();
     return data.length > 0 ? data[0] : null;
   };
 
   const getStreamerVods = async () => {
     const streamerId = await getStreamerID();
-    const res = await fetch(`http://localhost:3000/vods/${streamerId}`);
+    if (!streamerId) {
+      return null;
+    }
+
+    const res = await fetch(
+      `https://twitch-timestamps.vercel.app/vods/${streamerId}`,
+    );
+
+    if (!res.ok) {
+      console.error("Failed to fetch vods");
+      return null;
+    }
+
     const { data } = await res.json();
     return data;
   };
@@ -53,6 +90,10 @@
   // make sure the latest vod belongs to the current livestream
   const getLiveStreamVod = async (streamId) => {
     const vods = await getStreamerVods();
+    if (!vods) {
+      return null;
+    }
+
     const vod = vods.find((vod) => vod.stream_id === streamId);
     return vod;
   };
