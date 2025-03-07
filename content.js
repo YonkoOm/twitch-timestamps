@@ -307,7 +307,12 @@
         const vods = res[username];
         delete vods[vodId];
 
-        await chrome.storage.local.set({ [username]: vods });
+        if (Object.keys(vods).length > 0) {
+          await chrome.storage.local.set({ [username]: vods });
+        } else {
+          await chrome.storage.local.remove([username]);
+        }
+
         sendResponse([]);
       })();
       return true;
