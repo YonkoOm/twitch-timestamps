@@ -273,8 +273,6 @@
 
   chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
     if (request.type === "URLChange") {
-      console.log("URL Changed: ", request.url);
-      // chrome.storage.local.clear();
       initStreamAndButton();
     } else if (request.type === "STREAM_DATA") {
       sendResponse({ vodId, username, liveStreamStartTime });
