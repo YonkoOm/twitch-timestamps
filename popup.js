@@ -1,10 +1,5 @@
 import { getActiveTabUrl } from "./utils.js";
 
-const isWatchingVod = (url) => {
-  const match = url.match(/twitch\.tv\/videos\/(\d+)/);
-  return !!match;
-};
-
 const convertSecondsToTimeFormat = (timestamp) => {
   const hours = Math.floor(timestamp / (60 * 60));
   const minutes = Math.floor((timestamp % (60 * 60)) / 60);
@@ -190,9 +185,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
   const { vodId, username, liveStreamStartTime } = res;
 
-  if (liveStreamStartTime) {
-    displayVodLinks(username);
-  } else if (isWatchingVod(activeTab.url)) {
+  if (!username) {
+    displayEmpty("Go to a vod or livestream to see timestamps or vod links");
+  } else if (!liveStreamStartTime) {
     displayVodTimestamps(vodId, username);
+  } else {
+    displayVodLinks(username);
   }
 });

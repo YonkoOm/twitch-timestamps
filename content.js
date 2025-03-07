@@ -238,13 +238,13 @@
     } else {
       const liveStreamData = await getLiveStreamData();
       if (liveStreamData) {
-        console.log(liveStreamData);
+        username = liveStreamData.user_login;
+        liveStreamStartTime = liveStreamData.started_at;
+
         const vod = await getLiveStreamVod(liveStreamData.id);
         if (!vod) return;
 
         vodId = vod.id;
-        liveStreamStartTime = liveStreamData.started_at;
-        username = liveStreamData.user_login;
       }
     }
   };
