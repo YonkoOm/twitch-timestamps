@@ -250,7 +250,7 @@
   };
 
   const updateBookmarkButtonVisibility = async () => {
-    if (username) {
+    if (vodId) {
       insertBookmarkButton();
     } else {
       removeBookmarkButton();
