@@ -20,13 +20,15 @@ const setBookmarkAttributes = (imageName, controls, eventListener) => {
   control.addEventListener("click", eventListener);
 };
 
-const clearButton = (eventListener) => {
-  const clearAllButton = document.createElement("button");
-  clearAllButton.innerText = "CLEAR ALL";
-  clearAllButton.className = "clearAll-button";
+const addClearButton = (eventListener) => {
+  const container = document.querySelector(".bookmarks-container");
 
-  document.querySelector(".bookmarks-container").prepend(clearAllButton);
-  clearAllButton.addEventListener("click", eventListener);
+  const clearButton = document.createElement("button");
+  clearButton.innerText = "CLEAR";
+  clearButton.className = "clear-button";
+  clearButton.addEventListener("click", eventListener);
+
+  container.prepend(clearButton);
 };
 
 const addTimestamp = (timestamp, note) => {
@@ -56,6 +58,7 @@ const addTimestamp = (timestamp, note) => {
 
   bookmarkCard.appendChild(bookmarkDetails);
   bookmarkCard.appendChild(controls);
+
   bookmarks.appendChild(bookmarkCard);
 };
 
@@ -74,35 +77,40 @@ const displayVodLink = (vodId, title) => {
 };
 
 const createTitle = (title) => {
+  const container = document.querySelector(".container");
+
   const headerElement = document.createElement("h1");
   headerElement.innerText = title;
 
-  document.querySelector(".container").prepend(headerElement);
+  container.prepend(headerElement);
 };
 
 const displayEmpty = (message) => {
   const bookmarks = document.querySelector(".bookmarks");
+
   const emptyMessage = document.createElement("div");
   emptyMessage.className = "empty-message";
-
   emptyMessage.innerText = message;
 
   bookmarks.appendChild(emptyMessage);
 };
 
 const displayTimestamps = (timestamps) => {
+  const clearButton = document.querySelector(".clear-button");
+
   const bookmarks = document.querySelector(".bookmarks");
   bookmarks.innerHTML = "";
 
   if (timestamps.length > 0) {
-    const button = document.querySelector(".clear-button");
-    if (!button) clearButton(onClearVod);
+    if (!clearButton) {
+      addClearButton(onClearVod);
+    }
 
     for (const { timestamp, note } of timestamps) {
       addTimestamp(timestamp, note);
     }
   } else {
-    document.querySelector(".clear-button")?.remove();
+    clearButton?.remove();
     displayEmpty("Add timestamps to see them here :)");
   }
 };
@@ -117,11 +125,13 @@ const displayVodTimestamps = async (vodId, username) => {
 
 const displayVodLinks = async (username) => {
   const emptyMessage = "Add timestamps to see VOD links here :)";
+
   const bookmarks = document.querySelector(".bookmarks");
   bookmarks.innerHTML = "";
 
   if (!username) {
-    document.querySelector(".clear-button")?.remove();
+    const clearButton = document.querySelector(".clear-button");
+    clearButton?.remove();
     displayEmpty(emptyMessage);
     return;
   }
@@ -132,7 +142,7 @@ const displayVodLinks = async (username) => {
   const vods = res[username];
 
   if (vods) {
-    clearButton(onClearVodLinks);
+    addClearButton(onClearVodLinks);
     for (const vodId in vods) {
       displayVodLink(vodId, vods[vodId].streamTitle);
     }
@@ -145,7 +155,7 @@ const onPlay = async (e) => {
   const activeTab = await getActiveTabUrl();
   const timestamp = e.target.parentNode.parentNode.getAttribute("timestamp");
   await chrome.tabs.sendMessage(activeTab.id, {
-    type: "PLAY",
+    action: "SEEK_VIDEO",
     time: Number(timestamp),
   });
 };
@@ -160,7 +170,7 @@ const onDelete = async (e) => {
   chrome.tabs.sendMessage(
     activeTab.id,
     {
-      type: "DELETE",
+      action: "DELETE_TIMESTAMP",
       time: Number(timestamp),
     },
     displayTimestamps,
@@ -172,7 +182,7 @@ const onClearVod = async () => {
 
   await chrome.tabs.sendMessage(
     activeTab.id,
-    { type: "CLEAR_VOD" },
+    { action: "CLEAR_VOD" },
     displayTimestamps,
   );
 };
@@ -182,7 +192,7 @@ const onClearVodLinks = async () => {
 
   await chrome.tabs.sendMessage(
     activeTab.id,
-    { type: "CLEAR_VOD_LINKS" },
+    { action: "CLEAR_STREAMER_INFO" },
     displayVodLinks,
   );
 };
@@ -190,16 +200,17 @@ const onClearVodLinks = async () => {
 document.addEventListener("DOMContentLoaded", async () => {
   const activeTab = await getActiveTabUrl();
   const res = await chrome.tabs.sendMessage(activeTab.id, {
-    type: "STREAM_DATA",
+    action: "GET_STREAM_DATA",
   });
   const { vodId, username, liveStreamStartTime } = res;
 
+  // check for missing username instead of missing VOD ID, as the user could be on a livestream without a VOD attached to it
   if (!username) {
     displayEmpty(
       "Go to a vod or livestream to see/add timestamps or vod links",
     );
   } else if (!liveStreamStartTime) {
-    displayVodTimestamps(vodId, username);
+    displayVodTimestamps(vodId, username); // if there is an unsername but no livestream start time, indicates we are watching VOD
   } else {
     displayVodLinks(username);
   }

@@ -124,7 +124,7 @@
     vods[vodId].timestamps ??= [];
 
     insertSorted(vods[vodId].timestamps, { timestamp, note });
-    vods[vodId].streamTitle ??= streamTitle;
+    vods[vodId].streamTitle ??= streamTitle; // just use first title whens storing timestamp as title can change
 
     await chrome.storage.local.set({ [username]: vods });
   };
@@ -277,14 +277,14 @@
   });
 
   chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
-    if (request.type === "URLChange") {
+    if (request.action === "URL_CHANGED") {
       initStreamAndButton();
-    } else if (request.type === "STREAM_DATA") {
+    } else if (request.action === "GET_STREAM_DATA") {
       sendResponse({ vodId, username, liveStreamStartTime });
-    } else if (request.type === "PLAY") {
+    } else if (request.action === "SEEK_VIDEO") {
       const video = document.querySelector("video");
       video.currentTime = request.time;
-    } else if (request.type === "DELETE") {
+    } else if (request.action === "DELETE_TIMESTAMP") {
       (async () => {
         const res = await chrome.storage.local.get([username]);
 
@@ -303,7 +303,7 @@
       })();
 
       return true; // tells chrome we want to send a response asynchronously
-    } else if (request.type === "CLEAR_VOD") {
+    } else if (request.action === "CLEAR_VOD") {
       (async () => {
         const res = await chrome.storage.local.get([username]);
 
@@ -319,7 +319,7 @@
         sendResponse([]);
       })();
       return true;
-    } else if (request.type === "CLEAR_VOD_LINKS") {
+    } else if (request.action === "CLEAR_STREAMER_INFO") {
       chrome.storage.local.remove([username]);
     }
     return false;
