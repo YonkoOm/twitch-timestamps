@@ -116,7 +116,7 @@ const displayVodTimestamps = async (vodId, username) => {
   displayTimestamps(timestamps);
 };
 
-const displayVodLinks = async (username = null) => {
+const displayVodLinks = async (username) => {
   const emptyMessage = "Add timestamps to see VOD links here :)";
   const bookmarks = document.querySelector(".bookmarks");
   bookmarks.innerHTML = "";
