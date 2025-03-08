@@ -1,5 +1,5 @@
 (() => {
-  let liveStreamStartTime, vodId, username;
+  let liveStreamStartTime, vodId, username, streamTitle;
 
   const getStreamerUsername = () => {
     const url = window.location.href;
@@ -13,7 +13,7 @@
     return match ? match[1] : null;
   };
 
-  const getVodStreamer = async () => {
+  const getVodData = async () => {
     const res = await fetch(
       `https://twitch-timestamps.vercel.app/vod?id=${vodId}`,
     );
@@ -24,7 +24,7 @@
     }
 
     const { data } = await res.json();
-    return data[0].user_login;
+    return { userLogin: data[0].user_login, title: data[0].title };
   };
 
   const getStreamerID = async () => {
@@ -120,9 +120,11 @@
   const storeTimestampWithNote = async (timestamp, note) => {
     const res = await chrome.storage.local.get([username]);
     const vods = res[username] ?? {};
-    vods[vodId] = vods[vodId] ?? [];
+    vods[vodId] ??= {};
+    vods[vodId].timestamps ??= [];
 
-    insertSorted(vods[vodId], { timestamp, note });
+    insertSorted(vods[vodId].timestamps, { timestamp, note });
+    vods[vodId].streamTitle ??= streamTitle;
 
     await chrome.storage.local.set({ [username]: vods });
   };
@@ -229,17 +231,20 @@
   };
 
   const initializeStreamData = async () => {
-    vodId = liveStreamStartTime = username = null;
+    vodId = liveStreamStartTime = username = streamTitle = null;
 
     vodId = getVodId();
     // check if they watching vod first
     if (vodId) {
-      username = await getVodStreamer();
+      const vodData = await getVodData();
+      username = vodData.userLogin;
+      streamTitle = vodData.title;
     } else {
       const liveStreamData = await getLiveStreamData();
       if (liveStreamData) {
         username = liveStreamData.user_login;
         liveStreamStartTime = liveStreamData.started_at;
+        streamTitle = liveStreamData.title;
 
         const vod = await getLiveStreamVod(liveStreamData.id);
         if (!vod) return;
@@ -284,16 +289,16 @@
         const res = await chrome.storage.local.get([username]);
 
         const vods = res[username];
-        vods[vodId] = vods[vodId].filter(
+        vods[vodId].timestamps = vods[vodId].timestamps.filter(
           ({ timestamp }) => timestamp !== request.time,
         );
 
-        if (vods[vodId].length === 0) {
+        if (vods[vodId].timestamps.length > 0) {
+          await chrome.storage.local.set({ [username]: vods });
+          sendResponse(vods[vodId].timestamps);
+        } else {
           chrome.storage.local.remove([username]);
           sendResponse([]);
-        } else {
-          await chrome.storage.local.set({ [username]: vods });
-          sendResponse(vods[vodId]);
         }
       })();
 

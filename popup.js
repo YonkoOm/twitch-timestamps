@@ -59,13 +59,12 @@ const addTimestamp = (timestamp, note) => {
   bookmarks.appendChild(bookmarkCard);
 };
 
-const displayVodLink = (vodId) => {
-  const baseVodUrl = "https://www.twitch.tv/videos";
+const displayVodLink = (vodId, title) => {
   const bookmarks = document.querySelector(".bookmarks");
 
   const vodLink = document.createElement("a");
-  vodLink.href = baseVodUrl + `/${vodId}`;
-  vodLink.innerHTML = baseVodUrl + `/${vodId}`;
+  vodLink.href = `https://www.twitch.tv/videos/${vodId}`;
+  vodLink.innerHTML = title;
   vodLink.className = "vod-link";
   vodLink.addEventListener("click", () => {
     chrome.tabs.create({ url: vodLink.href });
@@ -135,7 +134,7 @@ const displayVodLinks = async (username) => {
   if (vods) {
     clearButton(onClearVodLinks);
     for (const vodId in vods) {
-      displayVodLink(vodId);
+      displayVodLink(vodId, vods[vodId].streamTitle);
     }
   } else {
     displayEmpty(emptyMessage);
