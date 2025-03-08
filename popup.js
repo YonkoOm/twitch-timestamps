@@ -109,7 +109,7 @@ const displayTimestamps = (timestamps) => {
 
 const displayVodTimestamps = async (vodId, username) => {
   const res = await chrome.storage.local.get([username]);
-  const timestamps = res[username]?.[vodId] ?? [];
+  const timestamps = res[username]?.[vodId]?.timestamps ?? [];
 
   createTitle(`${username}'s Timestamps`);
   displayTimestamps(timestamps);
