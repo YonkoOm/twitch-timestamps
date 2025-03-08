@@ -13,12 +13,6 @@ body {
   padding: 5px;
 }
 
-.title {
-  font-size: 24px;
-  font-weight: bold;
-  text-align: center;
-}
-
 h1 {
   font-size: 15px;
   font-weight: 700;
@@ -82,14 +76,15 @@ h1 {
   border-radius: 5px;
 }
 
-.empty {
+.empty-message {
   font-size: 14px;
   font-weight: 600;
+  justify-self: center;
   text-align: center;
   padding: 4px;
 }
 
-.clear-vod {
+.clearAll-button {
   font-size: 12px;
   font-weight: 700;
   color: #dc3545;
@@ -104,17 +99,17 @@ h1 {
   cursor: pointer;
 }
 
-.clear-vod:hover {
+.clearAll-button:hover {
   background-color: #dc3545;
   color: white;
 }
 
 .vod-link {
+  width: fit-content;
+  padding: 2px;
   font-size: 14px;
   text-decoration: none;
-  color: rgb(37, 99, 235);
-  transition: color 0.3s ease;
-  padding: 2px;
+  color: #2563eb;
 }
 
 .vod-link:hover {

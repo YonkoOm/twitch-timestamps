@@ -11,92 +11,99 @@ const convertSecondsToTimeFormat = (timestamp) => {
   return `${paddedHours}:${paddedMinutes}:${paddedSeconds}`;
 };
 
-const setBookmarkAttributes = (name, controlsElement, eventListener) => {
-  const controlElement = document.createElement("img");
-  controlElement.className = "control-element";
-  controlElement.src = "assets/" + name + ".svg";
-  controlsElement.appendChild(controlElement);
+const setBookmarkAttributes = (imageName, controls, eventListener) => {
+  const control = document.createElement("img");
+  control.className = "control-element";
+  control.src = "assets/" + imageName + ".svg";
+  controls.appendChild(control);
 
-  controlElement.addEventListener("click", eventListener);
+  control.addEventListener("click", eventListener);
 };
 
 const clearButton = (eventListener) => {
-  const buttonElement = document.createElement("button");
-  buttonElement.innerText = "CLEAR ALL";
-  buttonElement.className = "clear-vod";
+  const clearAllButton = document.createElement("button");
+  clearAllButton.innerText = "CLEAR ALL";
+  clearAllButton.className = "clearAll-button";
 
-  document.querySelector(".bookmarks-container").prepend(buttonElement);
-  buttonElement.addEventListener("click", eventListener);
+  document.querySelector(".bookmarks-container").prepend(clearAllButton);
+  clearAllButton.addEventListener("click", eventListener);
 };
 
 const addTimestamp = (timestamp, note) => {
   const bookmarks = document.querySelector(".bookmarks");
-  const bookmarkElement = document.createElement("div");
-  const timestampElement = document.createElement("div");
-  const controlsElement = document.createElement("div");
-  const titleElement = document.createElement("div");
-  const bookmarkInfoElement = document.createElement("div");
+  const bookmarkCard = document.createElement("div");
+  const timestampDisplay = document.createElement("div");
+  const controls = document.createElement("div");
+  const noteCard = document.createElement("div");
+  const bookmarkDetails = document.createElement("div");
 
-  titleElement.innerText = note;
-  titleElement.className = "note";
+  noteCard.innerText = note;
+  noteCard.className = "note";
 
-  bookmarkElement.id = `bookmark-${timestamp}`;
-  bookmarkElement.className = "bookmark";
-  bookmarkElement.setAttribute("timestamp", timestamp);
+  bookmarkCard.id = `bookmark-${timestamp}`;
+  bookmarkCard.className = "bookmark";
+  bookmarkCard.setAttribute("timestamp", timestamp);
 
-  timestampElement.innerText = convertSecondsToTimeFormat(timestamp);
+  timestampDisplay.innerText = convertSecondsToTimeFormat(timestamp);
 
-  controlsElement.className = "timestamp-controls";
-  setBookmarkAttributes("play", controlsElement, onPlay);
-  setBookmarkAttributes("trash", controlsElement, onDelete);
+  controls.className = "timestamp-controls";
+  setBookmarkAttributes("play", controls, onPlay);
+  setBookmarkAttributes("trash", controls, onDelete);
 
-  bookmarkInfoElement.className = "bookmark-info";
-  bookmarkInfoElement.appendChild(titleElement);
-  bookmarkInfoElement.appendChild(timestampElement);
+  bookmarkDetails.className = "bookmark-info";
+  bookmarkDetails.appendChild(noteCard);
+  bookmarkDetails.appendChild(timestampDisplay);
 
-  bookmarkElement.appendChild(bookmarkInfoElement);
-  bookmarkElement.appendChild(controlsElement);
-  bookmarks.appendChild(bookmarkElement);
+  bookmarkCard.appendChild(bookmarkDetails);
+  bookmarkCard.appendChild(controls);
+  bookmarks.appendChild(bookmarkCard);
 };
 
 const displayVodLink = (vodId) => {
   const baseVodUrl = "https://www.twitch.tv/videos";
   const bookmarks = document.querySelector(".bookmarks");
 
-  const vodLinkElement = document.createElement("a");
-  vodLinkElement.href = baseVodUrl + `/${vodId}`;
-  vodLinkElement.innerHTML = baseVodUrl + `/${vodId}`;
-  vodLinkElement.className = "vod-link";
-  vodLinkElement.addEventListener("click", () => {
-    chrome.tabs.create({ url: vodLinkElement.href });
+  const vodLink = document.createElement("a");
+  vodLink.href = baseVodUrl + `/${vodId}`;
+  vodLink.innerHTML = baseVodUrl + `/${vodId}`;
+  vodLink.className = "vod-link";
+  vodLink.addEventListener("click", () => {
+    chrome.tabs.create({ url: vodLink.href });
   });
 
-  bookmarks.append(vodLinkElement);
+  bookmarks.append(vodLink);
+};
+
+const createTitle = (title) => {
+  const headerElement = document.createElement("h1");
+  headerElement.innerText = title;
+
+  document.querySelector(".container").prepend(headerElement);
 };
 
 const displayEmpty = (message) => {
   const bookmarks = document.querySelector(".bookmarks");
-  const divElement = document.createElement("div");
-  divElement.className = "empty";
+  const emptyMessage = document.createElement("div");
+  emptyMessage.className = "empty-message";
 
-  divElement.innerText = message;
+  emptyMessage.innerText = message;
 
-  bookmarks.appendChild(divElement);
+  bookmarks.appendChild(emptyMessage);
 };
 
-const displayTimestamps = (currTimestamps) => {
+const displayTimestamps = (timestamps) => {
   const bookmarks = document.querySelector(".bookmarks");
   bookmarks.innerHTML = "";
 
-  if (currTimestamps.length > 0) {
-    const button = document.querySelector(".clear-vod");
+  if (timestamps.length > 0) {
+    const button = document.querySelector(".clear-button");
     if (!button) clearButton(onClearVod);
 
-    for (const timestamp of currTimestamps) {
-      addTimestamp(timestamp.timestamp, timestamp.note);
+    for (const { timestamp, note } of timestamps) {
+      addTimestamp(timestamp, note);
     }
   } else {
-    document.querySelector("button")?.remove();
+    document.querySelector(".clear-button")?.remove();
     displayEmpty("Add timestamps to see them here :)");
   }
 };
@@ -104,29 +111,32 @@ const displayTimestamps = (currTimestamps) => {
 const displayVodTimestamps = async (vodId, username) => {
   const res = await chrome.storage.local.get([username]);
   const timestamps = res[username]?.[vodId] ?? [];
+
+  createTitle(`${username}'s Timestamps`);
   displayTimestamps(timestamps);
 };
 
 const displayVodLinks = async (username = null) => {
-  const emptyMessage =
-    "Add timestamps to see links of vods with saved timestamps here :)";
+  const emptyMessage = "Add timestamps to see VOD links here :)";
   const bookmarks = document.querySelector(".bookmarks");
   bookmarks.innerHTML = "";
 
   if (!username) {
+    document.querySelector(".clear-button")?.remove();
     displayEmpty(emptyMessage);
     return;
   }
 
-  const res = await chrome.storage.local.get([username]);
-  const vods = res[username] ?? {};
-  for (const vodId in vods) {
-    displayVodLink(vodId);
-  }
+  createTitle(`${username}'s VOD Links`);
 
-  if (Object.keys(vods).length > 0) {
-    const button = document.querySelector(".clear-vod");
-    if (!button) clearButton(onClearVodLinks);
+  const res = await chrome.storage.local.get([username]);
+  const vods = res[username];
+
+  if (vods) {
+    clearButton(onClearVodLinks);
+    for (const vodId in vods) {
+      displayVodLink(vodId);
+    }
   } else {
     displayEmpty(emptyMessage);
   }
@@ -186,7 +196,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   const { vodId, username, liveStreamStartTime } = res;
 
   if (!username) {
-    displayEmpty("Go to a vod or livestream to see timestamps or vod links");
+    displayEmpty(
+      "Go to a vod or livestream to see/add timestamps or vod links",
+    );
   } else if (!liveStreamStartTime) {
     displayVodTimestamps(vodId, username);
   } else {
