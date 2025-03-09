@@ -267,6 +267,14 @@
     updateBookmarkButtonVisibility();
   };
 
+  const setStreamerVods = async (vods) => {
+    if (Object.keys(vods).length > 0) {
+      await chrome.storage.local.set({ [username]: vods });
+    } else {
+      await chrome.storage.local.remove([username]);
+    }
+  };
+
   const observer = new MutationObserver(initStreamAndButton);
   const title = document.querySelector("title");
 
@@ -293,28 +301,22 @@
           ({ timestamp }) => timestamp !== request.time,
         );
 
-        if (vods[vodId].timestamps.length > 0) {
-          await chrome.storage.local.set({ [username]: vods });
-          sendResponse(vods[vodId].timestamps);
-        } else {
-          chrome.storage.local.remove([username]);
-          sendResponse([]);
+        if (vods[vodId].timestamps.length === 0) {
+          delete vods[vodId];
         }
+
+        await setStreamerVods(vods);
+        sendResponse(vods[vodId] ? vods[vodId].timestamps : []);
       })();
 
       return true; // tells chrome we want to send a response asynchronously
     } else if (request.action === "CLEAR_VOD") {
       (async () => {
         const res = await chrome.storage.local.get([username]);
-
         const vods = res[username];
-        delete vods[vodId];
 
-        if (Object.keys(vods).length > 0) {
-          await chrome.storage.local.set({ [username]: vods });
-        } else {
-          await chrome.storage.local.remove([username]);
-        }
+        delete vods[vodId];
+        await setStreamerVods(vods);
 
         sendResponse([]);
       })();
