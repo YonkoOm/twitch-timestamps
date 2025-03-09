@@ -84,22 +84,22 @@ h1 {
   padding: 4px;
 }
 
-.clearAll-button {
+.clear-button {
   font-size: 12px;
   font-weight: 700;
   color: #dc3545;
   width: fit-content;
   background-color: transparent;
   transition: all 0.3s ease;
-  padding: 6px 12px;
+  padding: 6px 20px;
   border-radius: 5px;
-  border: 2px solid #dc3545;
+  border: 1px solid #dc3545;
   margin-left: auto;
-  padding-left: 10px;
   cursor: pointer;
+  margin-bottom: 10px;
 }
 
-.clearAll-button:hover {
+.clear-button:hover {
   background-color: #dc3545;
   color: white;
 }
