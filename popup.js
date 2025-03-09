@@ -44,7 +44,7 @@ const addTimestamp = (timestamp, note) => {
 
   bookmarkCard.id = `bookmark-${timestamp}`;
   bookmarkCard.className = "bookmark";
-  bookmarkCard.setAttribute("timestamp", timestamp);
+  bookmarkCard.dataset.timestamp = timestamp;
 
   timestampDisplay.innerText = convertSecondsToTimeFormat(timestamp);
 
@@ -153,7 +153,7 @@ const displayVodLinks = async (username) => {
 
 const onPlay = async (e) => {
   const activeTab = await getActiveTabUrl();
-  const timestamp = e.target.parentNode.parentNode.getAttribute("timestamp");
+  const timestamp = e.target.parentNode.parentNode.dataset.timestamp;
   await chrome.tabs.sendMessage(activeTab.id, {
     action: "SEEK_VIDEO",
     time: Number(timestamp),
@@ -162,7 +162,7 @@ const onPlay = async (e) => {
 
 const onDelete = async (e) => {
   const activeTab = await getActiveTabUrl();
-  const timestamp = e.target.parentNode.parentNode.getAttribute("timestamp");
+  const timestamp = e.target.parentNode.parentNode.dataset.timestamp;
 
   const timestampToDelete = document.getElementById(`bookmark-${timestamp}`);
   timestampToDelete.parentNode.removeChild(timestampToDelete);
