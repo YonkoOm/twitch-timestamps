@@ -24,7 +24,7 @@
     }
 
     const { data } = await res.json();
-    return { userLogin: data[0].user_login, title: data[0].title };
+    return { username: data[0].user_login, title: data[0].title };
   };
 
   const getStreamerID = async () => {
@@ -159,69 +159,62 @@
   };
 
   const showNoteField = () => {
-    const inputField = document.querySelector(".note-input");
-    inputField.classList.remove("hidden");
-    inputField.focus();
+    const noteField = document.querySelector(".note-input");
+    noteField.dataset.timestamp = getTimestamp();
+    noteField.classList.remove("hidden");
+    noteField.focus();
   };
 
   const hideNoteField = () => {
-    const inputField = document.querySelector(".note-input");
-    inputField.classList.add("hidden");
-    inputField.value = "";
+    const noteField = document.querySelector(".note-input");
+    noteField.classList.add("hidden");
+    noteField.value = "";
   };
 
-  const setupNoteField = () => {
+  const addNoteField = () => {
     let noteField = document.querySelector(".note-input");
-    if (!noteField) {
-      noteField = document.createElement("input");
-      noteField.classList.add("note-input", "hidden");
-      noteField.placeholder = "enter to save or escape to exit";
-      noteField.type = "text";
-      document.querySelector(".video-player")?.appendChild(noteField);
-    } else {
-      noteField.removeEventListener("keydown", noteField.keydownHandler);
-      noteField.removeEventListener("blur", noteField.blurHandler);
-    }
+    const videoPlayer = document.querySelector(".video-player");
 
-    const timestamp = getTimestamp();
-    noteField.keydownHandler = async (e) => {
+    if (noteField || !videoPlayer) return;
+
+    noteField = document.createElement("input");
+    noteField.classList.add("note-input", "hidden");
+    noteField.placeholder = "enter to save";
+    noteField.type = "text";
+
+    noteField.addEventListener("keydown", async (e) => {
       if (e.key === "Enter") {
         const note = e.target.value.trim();
-        await storeTimestampWithNote(timestamp, note);
+        const timestamp = noteField.dataset.timestamp;
+        await storeTimestampWithNote(Number(timestamp), note);
         hideNoteField();
       } else if (e.key === "Escape") {
         hideNoteField();
       }
-    };
+    });
 
-    noteField.blurHandler = () => {
-      if (!noteField.classList.contains("hidden")) {
-        hideNoteField();
-      }
-    };
+    noteField.addEventListener("blur", hideNoteField);
 
-    noteField.addEventListener("keydown", noteField.keydownHandler);
-    noteField.addEventListener("blur", noteField.blurHandler);
-
-    showNoteField();
+    videoPlayer.appendChild(noteField);
   };
 
+
   const insertBookmarkButton = () => {
-    const bookmarkButtonExists = document.querySelector(".bookmark");
+    let bookmarkButton = document.querySelector(".bookmark");
     const videoPlayerControls = document.querySelector(
       ".player-controls__right-control-group",
     );
 
-    if (bookmarkButtonExists || !videoPlayerControls) return; // videoPlayerControls checks for the case where the user in the home page of the streamer (url contains their username but stream in the background)
+    if (bookmarkButton || !videoPlayerControls) return; // videoPlayerControls checks for the case where the user in the home page of the streamer (url contains their username but stream in the background)
 
-    const bookmarkButton = document.createElement("button");
+    bookmarkButton = document.createElement("button");
     bookmarkButton.className = "bookmark";
 
     const img = document.createElement("img");
     img.src = chrome.runtime.getURL("assets/bookmark-white.svg");
 
     bookmarkButton.appendChild(img);
-    bookmarkButton.addEventListener("click", setupNoteField);
+    bookmarkButton.addEventListener("click", showNoteField);
 
     videoPlayerControls.appendChild(bookmarkButton);
   };
@@ -234,10 +227,10 @@
     vodId = liveStreamStartTime = username = streamTitle = null;
 
     vodId = getVodId();
-    // check if they watching vod first
+    // check if in VOD
     if (vodId) {
       const vodData = await getVodData();
-      username = vodData.userLogin;
+      username = vodData.username;
       streamTitle = vodData.title;
     } else {
       const liveStreamData = await getLiveStreamData();
@@ -247,24 +240,23 @@
         streamTitle = liveStreamData.title;
 
         const vod = await getLiveStreamVod(liveStreamData.id);
-        if (!vod) return;
-
-        vodId = vod.id;
+        vodId = vod ? vod.id : null;
       }
     }
   };
 
-  const updateBookmarkButtonVisibility = async () => {
+  const updateBookmarkUI = async () => {
     if (vodId) {
       insertBookmarkButton();
+      addNoteField();
     } else {
       removeBookmarkButton();
     }
   };
 
-  const initStreamAndButton = async () => {
+  const initStreamAndBookmarkUI = async () => {
     await initializeStreamData();
-    updateBookmarkButtonVisibility();
+    updateBookmarkUI();
   };
 
   const setStreamerVods = async (vods) => {
@@ -275,10 +267,10 @@
     }
   };
 
-  const observer = new MutationObserver(initStreamAndButton);
+  const observer = new MutationObserver(initStreamAndBookmarkUI);
   const title = document.querySelector("title");
 
-  // this handles the weird case where if the user is live streaming and their username is clicked, the video player stays in the background on the same url, so when the video player is clicked and  brought to the foreground, the player controls are reset
+  // this handles the weird case where clicking the username during a livestream puts the video player in the background, resetting the player controls (url stays the same)
   observer.observe(title, {
     childList: true,
     subtree: true,
@@ -286,7 +278,7 @@
 
   chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
     if (request.action === "URL_CHANGED") {
-      initStreamAndButton();
+      initStreamAndBookmarkUI();
     } else if (request.action === "GET_STREAM_DATA") {
       sendResponse({ vodId, username, liveStreamStartTime });
     } else if (request.action === "SEEK_VIDEO") {
@@ -316,8 +308,8 @@
         const vods = res[username];
 
         delete vods[vodId];
-        await setStreamerVods(vods);
 
+        await setStreamerVods(vods);
         sendResponse([]);
       })();
       return true;
