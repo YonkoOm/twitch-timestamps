@@ -285,6 +285,11 @@
       initStreamAndBookmarkUI();
     } else if (request.action === "GET_STREAM_DATA") {
       sendResponse({ vodId, username, liveStreamStartTime });
+    } else if (request.action === "OPEN_NOTE_FIELD") {
+      const bookmark = document.querySelector(".bookmark");
+      if (bookmark) {
+        showNoteField();
+      }
     } else if (request.action === "SEEK_VIDEO") {
       const video = document.querySelector("video");
       video.currentTime = request.time;

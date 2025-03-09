@@ -16,6 +16,14 @@
   "background": {
     "service_worker": "background.js"
   },
+  "commands": {
+    "open_note_field": {
+      "suggested_key": {
+        "default": "Alt+S"
+      },
+      "description": "Open the note field to enter note for timestamp"
+    }
+  },
   "permissions": ["activeTab", "storage", "tabs"],
   "web_accessible_resources": [
     {
