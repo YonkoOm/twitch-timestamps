@@ -198,6 +198,9 @@
     videoPlayer.appendChild(noteField);
   };
 
+  const removeNoteField = () => {
+    document.querySelector(".note-input")?.remove();
+  };
 
   const insertBookmarkButton = () => {
     let bookmarkButton = document.querySelector(".bookmark");
@@ -251,6 +254,7 @@
       addNoteField();
     } else {
       removeBookmarkButton();
+      removeNoteField();
     }
   };
 
