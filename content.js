@@ -43,10 +43,10 @@
     }
 
     const { data } = await res.json();
-    return data[0].id;
+    return data.length > 0 ? data[0].id : null;
   };
 
-  // return streamer data if they are live, otherwise if invalid endpoint, return null
+  // return streamer data if they are live, otherwise return null for an invalid endpoint
   const getLiveStreamData = async () => {
     const streamer = getStreamerUsername();
     if (!streamer) {
@@ -98,23 +98,23 @@
     return vod;
   };
 
-  const insertSorted = (timestamps, timestamp) => {
+  const insertSorted = (timestamps, timestamp, note) => {
     let left = 0,
       right = timestamps.length - 1;
 
     while (left <= right) {
       let mid = Math.floor((left + right) / 2);
-      if (timestamps[mid].timestamp === timestamp.timestamp) {
+      if (timestamps[mid].timestamp === timestamp) {
         alert("Timestamp already saved at this time");
         return;
-      } else if (timestamps[mid].timestamp > timestamp.timestamp) {
+      } else if (timestamps[mid].timestamp > timestamp) {
         right = mid - 1;
       } else {
         left = mid + 1;
       }
     }
 
-    timestamps.splice(left, 0, timestamp);
+    timestamps.splice(left, 0, { timestamp: timestamp, note: note });
   };
 
   const storeTimestampWithNote = async (timestamp, note) => {
@@ -123,39 +123,37 @@
     vods[vodId] ??= {};
     vods[vodId].timestamps ??= [];
 
-    insertSorted(vods[vodId].timestamps, { timestamp, note });
-    vods[vodId].streamTitle ??= streamTitle; // just use first title whens storing timestamp as title can change
+    insertSorted(vods[vodId].timestamps, timestamp, note);
+    vods[vodId].streamTitle ??= streamTitle; // just use first title when storing timestamps as title can change
 
     await chrome.storage.local.set({ [username]: vods });
   };
 
   const getTimestamp = () => {
+    let timestamp; // in seconds
     if (liveStreamStartTime) {
       const startTime = new Date(liveStreamStartTime);
       const currentTime = new Date();
 
-      const timestamp = (currentTime - startTime) / 1000;
+      timestamp = (currentTime - startTime) / 1000;
 
       const hours = Math.floor(timestamp / 3600);
       const minutes = Math.floor((timestamp % 3600) / 60);
       const seconds = Math.floor(timestamp % 60);
 
       console.log(`${hours} hours, ${minutes} minutes, ${seconds} seconds`);
-
-      return timestamp;
     } else {
       const video = document.querySelector("video");
 
-      const timestamp = video.currentTime;
+      timestamp = video.currentTime;
 
       const hours = Math.floor(timestamp / 3600);
       const minutes = Math.floor((timestamp % 3600) / 60);
       const seconds = Math.floor(timestamp % 60);
 
       console.log(`${hours} hours, ${minutes} minutes, ${seconds} seconds`);
-
-      return timestamp;
     }
+    return timestamp;
   };
 
   const showNoteField = () => {
@@ -185,8 +183,9 @@
     noteField.addEventListener("keydown", async (e) => {
       if (e.key === "Enter") {
         const note = e.target.value.trim();
-        const timestamp = noteField.dataset.timestamp;
-        await storeTimestampWithNote(Number(timestamp), note);
+        const timestamp = Number(noteField.dataset.timestamp);
+
+        await storeTimestampWithNote(timestamp, note);
         hideNoteField();
       } else if (e.key === "Escape") {
         hideNoteField();
@@ -208,7 +207,7 @@
       ".player-controls__right-control-group",
     );
 
-    if (bookmarkButton || !videoPlayerControls) return; // videoPlayerControls checks for the case where the user in the home page of the streamer (url contains their username but stream in the background)
+    if (bookmarkButton || !videoPlayerControls) return; // videoPlayerControls checks if the user is on the streamer's home page (URL contains their username) while the stream is playing in the background
 
     bookmarkButton = document.createElement("button");
     bookmarkButton.className = "bookmark";
@@ -242,13 +241,14 @@
         liveStreamStartTime = liveStreamData.started_at;
         streamTitle = liveStreamData.title;
 
-        const vod = await getLiveStreamVod(liveStreamData.id);
+        const vod = await getLiveStreamVod(liveStreamData.id); // check if there is a VOD associated with the livestream
         vodId = vod ? vod.id : null;
       }
     }
   };
 
   const updateBookmarkUI = async () => {
+    // insert bookmark UI if VOD exists
     if (vodId) {
       insertBookmarkButton();
       addNoteField();
@@ -286,8 +286,8 @@
     } else if (request.action === "GET_STREAM_DATA") {
       sendResponse({ vodId, username, liveStreamStartTime });
     } else if (request.action === "OPEN_NOTE_FIELD") {
-      const bookmark = document.querySelector(".bookmark");
-      if (bookmark) {
+      const noteField = document.querySelector(".note-input");
+      if (noteField) {
         showNoteField();
       }
     } else if (request.action === "SEEK_VIDEO") {
@@ -321,6 +321,7 @@
         await setStreamerVods(vods);
         sendResponse([]);
       })();
+
       return true;
     } else if (request.action === "CLEAR_STREAMER_INFO") {
       chrome.storage.local.remove([username]);
