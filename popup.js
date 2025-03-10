@@ -165,7 +165,7 @@ const onDelete = async (e) => {
   const timestamp = e.target.parentNode.parentNode.dataset.timestamp;
 
   const timestampToDelete = document.getElementById(`bookmark-${timestamp}`);
-  timestampToDelete.parentNode.removeChild(timestampToDelete); // TODO:
+  timestampToDelete.remove();
 
   chrome.tabs.sendMessage(
     activeTab.id,
