@@ -59,7 +59,6 @@ const addTimestamp = (timestamp, note) => {
   const controls = document.createElement("div");
   const bookmarkInfo = document.createElement("div");
 
-  bookmarkCard.id = `bookmark-${timestamp}`;
   bookmarkCard.className = "bookmark";
   bookmarkCard.dataset.timestamp = timestamp;
 
@@ -73,8 +72,8 @@ const addTimestamp = (timestamp, note) => {
   bookmarkInfo.appendChild(timestampContainer);
 
   controls.className = "timestamp-controls";
-  createBookmarkControl("play", controls, onPlay);
-  createBookmarkControl("trash", controls, onDelete);
+  createBookmarkControl("play", controls, playTimestamp);
+  createBookmarkControl("trash", controls, deleteTimestamp);
 
   bookmarkCard.appendChild(bookmarkInfo);
   bookmarkCard.appendChild(controls);
@@ -104,7 +103,7 @@ const displayTimestamps = (timestamps) => {
 
   if (timestamps.length > 0) {
     if (!clearButton) {
-      addClearButton(onClearVod);
+      addClearButton(deleteVod);
     }
 
     for (const { timestamp, note } of timestamps) {
@@ -150,7 +149,7 @@ const displayVodLinks = async (username) => {
   displayLinks(vods);
 };
 
-const onPlay = async (e) => {
+const playTimestamp = async (e) => {
   const activeTab = await getActiveTabUrl();
   const timestamp = e.target.parentNode.parentNode.dataset.timestamp;
 
@@ -160,11 +159,12 @@ const onPlay = async (e) => {
   });
 };
 
-const onDelete = async (e) => {
+const deleteTimestamp = async (e) => {
   const activeTab = await getActiveTabUrl();
-  const timestamp = e.target.parentNode.parentNode.dataset.timestamp;
 
-  const timestampToDelete = document.getElementById(`bookmark-${timestamp}`);
+  const timestampToDelete = e.target.parentNode.parentNode;
+  const timestamp = timestampToDelete.dataset.timestamp;
+
   timestampToDelete.remove();
 
   chrome.tabs.sendMessage(
@@ -177,7 +177,7 @@ const onDelete = async (e) => {
   );
 };
 
-const onClearVod = async () => {
+const deleteVod = async () => {
   const activeTab = await getActiveTabUrl();
 
   await chrome.tabs.sendMessage(
@@ -187,7 +187,7 @@ const onClearVod = async () => {
   );
 };
 
-const onClearVodLinks = async () => {
+const deleteVodLinks = async () => {
   const activeTab = await getActiveTabUrl();
 
   await chrome.tabs.sendMessage(
