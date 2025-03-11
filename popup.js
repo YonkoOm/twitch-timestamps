@@ -83,16 +83,27 @@ const addTimestamp = (timestamp, note) => {
 
 const addVodLink = (vodId, title) => {
   const bookmarks = document.querySelector(".bookmarks");
+  const vodLinkCard = document.createElement("div");
+  const controls = document.createElement("div");
+
+  vodLinkCard.className = "bookmark";
+  vodLinkCard.dataset.vodId = vodId;
+
+  controls.className = "timestamp-controls";
+  createBookmarkControl("trash", controls, deleteVodLink);
 
   const vodLink = document.createElement("a");
   vodLink.href = `https://www.twitch.tv/videos/${vodId}`;
-  vodLink.innerText = title;
+  vodLink.innerText = title.substring(0, 100);
   vodLink.className = "vod-link";
   vodLink.addEventListener("click", () => {
     chrome.tabs.create({ url: vodLink.href });
   });
 
-  bookmarks.append(vodLink);
+  vodLinkCard.appendChild(vodLink);
+  vodLinkCard.appendChild(controls);
+
+  bookmarks.appendChild(vodLinkCard);
 };
 
 const displayTimestamps = (timestamps) => {
