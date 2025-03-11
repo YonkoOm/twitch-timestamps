@@ -319,20 +319,22 @@
       })();
 
       return true; // tells chrome we want to send a response asynchronously
-    } else if (request.action === "CLEAR_VOD") {
+    } else if (request.action === "DELETE_VOD") {
       (async () => {
         const res = await chrome.storage.local.get([username]);
         const vods = res[username];
 
-        delete vods[vodId];
+        // if a specific vodId is provided, delete that VOD; otherwise, delete the current VOD
+        delete vods[request.vodId ?? vodId];
 
         await setStreamerVods(vods);
-        sendResponse([]);
+        sendResponse(request.vodId ? vods : []);
       })();
 
       return true;
     } else if (request.action === "CLEAR_STREAMER_INFO") {
       chrome.storage.local.remove([username]);
+      sendResponse({});
     }
     return false;
   });

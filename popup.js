@@ -135,11 +135,15 @@ const displayVodTimestamps = async (vodId, username) => {
 };
 
 const displayLinks = (vods) => {
+  const clearButton = document.querySelector(".clear-button");
+
   const bookmarks = document.querySelector(".bookmarks");
   bookmarks.innerHTML = "";
 
-  if (vods) {
-    addClearButton(onClearVodLinks);
+  if (Object.keys(vods).length > 0) {
+    if (!clearButton) {
+      addClearButton(deleteVodLinks);
+    }
 
     for (const vodId in vods) {
       addVodLink(vodId, vods[vodId].streamTitle);
@@ -154,7 +158,7 @@ const displayLinks = (vods) => {
 
 const displayVodLinks = async (username) => {
   const res = await chrome.storage.local.get([username]);
-  const vods = res[username];
+  const vods = res[username] ?? {};
 
   createTitle(`${username}'s VOD Links`);
   displayLinks(vods);
@@ -193,7 +197,7 @@ const deleteVod = async () => {
 
   await chrome.tabs.sendMessage(
     activeTab.id,
-    { action: "CLEAR_VOD" },
+    { action: "DELETE_VOD" },
     displayTimestamps,
   );
 };
@@ -204,6 +208,21 @@ const deleteVodLinks = async () => {
   await chrome.tabs.sendMessage(
     activeTab.id,
     { action: "CLEAR_STREAMER_INFO" },
+    displayLinks,
+  );
+};
+
+const deleteVodLink = async (e) => {
+  const activeTab = await getActiveTabUrl();
+
+  const vodLinkToRemove = e.target.parentNode.parentNode;
+  const vodId = vodLinkToRemove.dataset.vodId;
+
+  vodLinkToRemove.remove();
+
+  await chrome.tabs.sendMessage(
+    activeTab.id,
+    { action: "DELETE_VOD", vodId: vodId },
     displayLinks,
   );
 };
