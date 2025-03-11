@@ -229,22 +229,30 @@
     vodId = liveStreamStartTime = username = streamTitle = null;
 
     vodId = getVodId();
-    // check if in VOD
+    // check if user is watching vod
     if (vodId) {
       const vodData = await getVodData();
       username = vodData.username;
       streamTitle = vodData.title;
-    } else {
-      const liveStreamData = await getLiveStreamData();
-      if (liveStreamData) {
-        username = liveStreamData.user_login;
-        liveStreamStartTime = liveStreamData.started_at;
-        streamTitle = liveStreamData.title;
-
-        const vod = await getLiveStreamVod(liveStreamData.id); // check if there is a VOD associated with the livestream
-        vodId = vod ? vod.id : null;
-      }
+      return;
     }
+
+    // Check if the user is watching a livestream (watching directly or on streamer's homepage when they are live)
+    const liveStreamData = await getLiveStreamData();
+    if (liveStreamData) {
+      username = liveStreamData.user_login;
+      liveStreamStartTime = liveStreamData.started_at;
+      streamTitle = liveStreamData.title;
+
+      // check if there is a VOD associated with the livestream
+      const vod = await getLiveStreamVod(liveStreamData.id);
+      vodId = vod ? vod.id : null;
+      return;
+    }
+
+    // if the streamer isn't live or we are not in a vod, check if user is in a streamer's home page
+    const streamerId = await getStreamerID();
+    username = streamerId ? getStreamerUsername() : null;
   };
 
   const updateBookmarkUI = async () => {

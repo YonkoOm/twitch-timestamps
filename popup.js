@@ -220,9 +220,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     displayEmpty(
       "Go to a vod or livestream to see/add timestamps or vod links",
     );
-  } else if (!liveStreamStartTime) {
-    displayVodTimestamps(vodId, username); // if there is an username but no livestream start time, indicates we are watching VOD
+  } else if (vodId && !liveStreamStartTime) {
+    displayVodTimestamps(vodId, username); // watching vod
   } else {
-    displayVodLinks(username); // watching livestream
+    displayVodLinks(username); // watching livestream or on user homepage
   }
 });
