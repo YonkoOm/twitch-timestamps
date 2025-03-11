@@ -3,7 +3,7 @@
 
   const getStreamerUsername = () => {
     const url = window.location.href;
-    const match = url.match(/twitch\.tv\/([^\/?]+)$/);
+    const match = url.match(/twitch\.tv\/([^\/?]+)/);
     return match ? match[1] : null;
   };
 
