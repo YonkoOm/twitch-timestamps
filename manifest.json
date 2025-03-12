@@ -19,9 +19,9 @@
   "commands": {
     "open_note_field": {
       "suggested_key": {
-        "default": "Alt+S"
+        "default": "Alt+Shift+S"
       },
-      "description": "Open the note field to enter note for timestamp"
+      "description": "Open Note Field"
     }
   },
   "permissions": ["activeTab", "storage", "tabs"],
