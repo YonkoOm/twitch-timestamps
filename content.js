@@ -317,7 +317,7 @@
         }
 
         await setStreamerVods(vods);
-        sendResponse(vods[vodId] ? vods[vodId].timestamps : []);
+        sendResponse(vods[vodId]?.timestamps ?? []);
       })();
 
       return true; // tells chrome we want to send a response asynchronously
