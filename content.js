@@ -300,7 +300,9 @@
       }
     } else if (request.action === "SEEK_VIDEO") {
       const video = document.querySelector("video");
-      video.currentTime = request.time;
+      if (request.time <= video.duration) {
+        video.currentTime = request.time;
+      }
     } else if (request.action === "DELETE_TIMESTAMP") {
       (async () => {
         const res = await chrome.storage.local.get([username]);
