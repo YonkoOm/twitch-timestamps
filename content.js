@@ -275,6 +275,16 @@
     }
   };
 
+  const setupKeyboardPlaybackShortcuts = () => {
+    document.addEventListener("keydown", async (e) => {
+      if (e.altKey && e.key === "ArrowRight") {
+        jumpToNextTimestamp();
+      } else if (e.altKey && e.key === "ArrowLeft") {
+        jumpToPreviousTimestamp();
+      }
+    });
+  };
+
   const initializeStreamData = async () => {
     vodId = liveStreamStartTime = username = streamTitle = null;
 
@@ -284,6 +294,7 @@
       const vodData = await getVodData();
       username = vodData.username;
       streamTitle = vodData.title;
+      setupKeyboardPlaybackShortcuts();
       return;
     }
 
@@ -336,14 +347,6 @@
   observer.observe(title, {
     childList: true,
     subtree: true,
-  });
-
-  document.addEventListener("keydown", async (e) => {
-    if (e.altKey && e.key === "ArrowRight") {
-      jumpToNextTimestamp();
-    } else if (e.altKey && e.key === "ArrowLeft") {
-      jumpToPreviousTimestamp();
-    }
   });
 
   chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
