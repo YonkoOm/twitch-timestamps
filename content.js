@@ -183,6 +183,11 @@
     noteField.addEventListener("keydown", async (e) => {
       if (e.key === "Enter") {
         const note = e.target.value.trim();
+        if (!note) {
+          alert("Enter a note to save");
+          return;
+        }
+
         const timestamp = Number(noteField.dataset.timestamp);
 
         await storeTimestampWithNote(timestamp, note);
