@@ -225,6 +225,56 @@
     document.querySelector(".bookmark")?.remove();
   };
 
+  const jumpToNextTimestamp = async () => {
+    const videoPlayer = document.querySelector("video");
+    const res = await chrome.storage.local.get([username]);
+    const timestamps = res[username]?.[vodId]?.timestamps;
+
+    if (!videoPlayer || !timestamps) {
+      return;
+    }
+
+    const currentTime = videoPlayer.currentTime;
+    const nextTimestamp = timestamps.find(
+      ({ timestamp }) => timestamp > currentTime,
+    );
+
+    if (nextTimestamp) {
+      videoPlayer.currentTime = nextTimestamp.timestamp;
+    }
+  };
+
+  const jumpToPreviousTimestamp = async () => {
+    const videoPlayer = document.querySelector("video");
+    const res = await chrome.storage.local.get([username]);
+    const timestamps = res[username]?.[vodId]?.timestamps;
+
+    if (!videoPlayer || !timestamps) {
+      return;
+    }
+
+    const currentTime = videoPlayer.currentTime;
+    const previousTimestamps = timestamps.filter(
+      ({ timestamp }) => timestamp < currentTime,
+    );
+
+    if (previousTimestamps.length > 1) {
+      // if user tries to to go back within 3 seconds of the previous timestamp, go to the one before the previous timestamp
+      if (
+        previousTimestamps[previousTimestamps.length - 1].timestamp >
+        currentTime - 3
+      ) {
+        videoPlayer.currentTime =
+          previousTimestamps[previousTimestamps.length - 2].timestamp;
+      } else {
+        videoPlayer.currentTime =
+          previousTimestamps[previousTimestamps.length - 1].timestamp;
+      }
+    } else if (previousTimestamps[0]) {
+      videoPlayer.currentTime = previousTimestamps[0].timestamp;
+    }
+  };
+
   const initializeStreamData = async () => {
     vodId = liveStreamStartTime = username = streamTitle = null;
 
@@ -286,6 +336,14 @@
   observer.observe(title, {
     childList: true,
     subtree: true,
+  });
+
+  document.addEventListener("keydown", async (e) => {
+    if (e.altKey && e.key === "ArrowRight") {
+      jumpToNextTimestamp();
+    } else if (e.altKey && e.key === "ArrowLeft") {
+      jumpToPreviousTimestamp();
+    }
   });
 
   chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
