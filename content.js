@@ -280,28 +280,30 @@
     }
   };
 
-  const setupKeyboardPlaybackShortcuts = () => {
-    document.addEventListener("keydown", async (e) => {
-      if (e.altKey && e.key === "ArrowRight") {
-        jumpToNextTimestamp();
-      } else if (e.altKey && e.key === "ArrowLeft") {
-        jumpToPreviousTimestamp();
-      }
-    });
+  const setupPlaybackShortcuts = (e) => {
+    if (e.altKey && e.key === "ArrowRight") {
+      jumpToNextTimestamp();
+    } else if (e.altKey && e.key === "ArrowLeft") {
+      jumpToPreviousTimestamp();
+    }
   };
 
   const initializeStreamData = async () => {
     vodId = liveStreamStartTime = username = streamTitle = null;
 
     vodId = getVodId();
+
     // check if user is watching vod
     if (vodId) {
       const vodData = await getVodData();
       username = vodData.username;
       streamTitle = vodData.title;
-      setupKeyboardPlaybackShortcuts();
+
+      document.addEventListener("keydown", setupPlaybackShortcuts);
       return;
     }
+
+    document.removeEventListener("keydown", setupPlaybackShortcuts);
 
     // Check if the user is watching a livestream (watching directly or on streamer's homepage when they are live)
     const liveStreamData = await getLiveStreamData();
