@@ -22,6 +22,12 @@
         "default": "Alt+Shift+S"
       },
       "description": "Open Note Field"
+    },
+    "open_popup": {
+      "suggested_key": {
+        "default": "Alt+Shift+P"
+      },
+      "description": "Opens Popup"
     }
   },
   "permissions": ["activeTab", "storage", "tabs"],

@@ -11,5 +11,7 @@ chrome.commands.onCommand.addListener(async (command) => {
   if (command === "open_note_field") {
     const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
     chrome.tabs.sendMessage(tabs[0].id, { action: "OPEN_NOTE_FIELD" });
+  } else if (command === "open_popup") {
+    chrome.action.openPopup();
   }
 });
