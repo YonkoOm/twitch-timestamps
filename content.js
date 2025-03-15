@@ -136,24 +136,12 @@
       const currentTime = new Date();
 
       timestamp = (currentTime - startTime) / 1000;
-
-      const hours = Math.floor(timestamp / 3600);
-      const minutes = Math.floor((timestamp % 3600) / 60);
-      const seconds = Math.floor(timestamp % 60);
-
-      console.log(`${hours} hours, ${minutes} minutes, ${seconds} seconds`);
     } else {
       const video = document.querySelector("video");
 
       timestamp = video.currentTime;
-
-      const hours = Math.floor(timestamp / 3600);
-      const minutes = Math.floor((timestamp % 3600) / 60);
-      const seconds = Math.floor(timestamp % 60);
-
-      console.log(`${hours} hours, ${minutes} minutes, ${seconds} seconds`);
     }
-    return timestamp;
+    return Math.floor(timestamp);
   };
 
   const showNoteField = () => {
