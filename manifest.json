@@ -19,7 +19,7 @@
   "commands": {
     "open_note_field": {
       "suggested_key": {
-        "default": "Alt+Shift+S"
+        "default": "Alt+Shift+N"
       },
       "description": "Open Note Field"
     },
