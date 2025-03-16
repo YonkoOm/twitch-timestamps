@@ -33,7 +33,7 @@ const displayEmpty = (message) => {
 const addClearButton = (eventListener) => {
   const container = document.querySelector(".bookmarks-container");
 
-  const clearButton = document.createElement("button");
+  const clearButton = document.createElement("div");
   clearButton.innerText = "CLEAR";
   clearButton.className = "clear-button";
   clearButton.addEventListener("click", eventListener);
