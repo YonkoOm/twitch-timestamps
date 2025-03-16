@@ -395,11 +395,9 @@
       sendResponse({});
     } else if (request.action === "DELETE_STREAMER") {
       (async () => {
-        const users = await chrome.storage.local.get(null);
-        delete users[request.username];
-
         await chrome.storage.local.remove([request.username]);
 
+        const users = await chrome.storage.local.get(null);
         sendResponse(users);
       })();
       return true;
