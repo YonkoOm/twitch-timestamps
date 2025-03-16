@@ -41,7 +41,7 @@ const addClearButton = (eventListener) => {
   container.prepend(clearButton);
 };
 
-const createBookmarkControl = (imageName, controls, eventListener) => {
+const addBookmarkControl = (imageName, controls, eventListener) => {
   const control = document.createElement("img");
 
   control.className = "control-element";
@@ -72,8 +72,8 @@ const addTimestamp = (timestamp, note) => {
   bookmarkInfo.appendChild(timestampContainer);
 
   controls.className = "timestamp-controls";
-  createBookmarkControl("play", controls, playTimestamp);
-  createBookmarkControl("trash", controls, deleteTimestamp);
+  addBookmarkControl("play", controls, playTimestamp);
+  addBookmarkControl("trash", controls, deleteTimestamp);
 
   bookmarkCard.appendChild(bookmarkInfo);
   bookmarkCard.appendChild(controls);
@@ -81,29 +81,29 @@ const addTimestamp = (timestamp, note) => {
   bookmarks.appendChild(bookmarkCard);
 };
 
-const addVodLink = (vodId, title) => {
+const addLink = (url, title, id, eventListener) => {
   const bookmarks = document.querySelector(".bookmarks");
-  const vodLinkCard = document.createElement("div");
+  const linkCard = document.createElement("div");
   const controls = document.createElement("div");
 
-  vodLinkCard.className = "bookmark";
-  vodLinkCard.dataset.vodId = vodId;
+  linkCard.className = "bookmark";
+  linkCard.dataset.id = id;
 
   controls.className = "timestamp-controls";
-  createBookmarkControl("trash", controls, deleteVodLink);
+  addBookmarkControl("trash", controls, eventListener);
 
-  const vodLink = document.createElement("a");
-  vodLink.href = `https://www.twitch.tv/videos/${vodId}`;
-  vodLink.innerText = title.substring(0, 100);
-  vodLink.className = "vod-link";
-  vodLink.addEventListener("click", () => {
-    chrome.tabs.create({ url: vodLink.href });
+  const link = document.createElement("a");
+  link.href = url;
+  link.innerText = title.substring(0, 100);
+  link.className = "link";
+  link.addEventListener("click", () => {
+    chrome.tabs.create({ url: link.href });
   });
 
-  vodLinkCard.appendChild(vodLink);
-  vodLinkCard.appendChild(controls);
+  linkCard.appendChild(link);
+  linkCard.appendChild(controls);
 
-  bookmarks.appendChild(vodLinkCard);
+  bookmarks.appendChild(linkCard);
 };
 
 const displayTimestamps = (timestamps) => {
@@ -114,7 +114,7 @@ const displayTimestamps = (timestamps) => {
 
   if (timestamps.length > 0) {
     if (!clearButton) {
-      addClearButton(deleteVod);
+      addClearButton(deleteAllTimestamps);
     }
 
     for (const { timestamp, note } of timestamps) {
@@ -134,7 +134,7 @@ const displayVodTimestamps = async (vodId, username) => {
   displayTimestamps(timestamps);
 };
 
-const displayLinks = (vods) => {
+const displayVodList = (vods) => {
   const clearButton = document.querySelector(".clear-button");
 
   const bookmarks = document.querySelector(".bookmarks");
@@ -142,16 +142,19 @@ const displayLinks = (vods) => {
 
   if (Object.keys(vods).length > 0) {
     if (!clearButton) {
-      addClearButton(deleteVodLinks);
+      addClearButton(deleteAllVods);
     }
 
     for (const vodId in vods) {
-      addVodLink(vodId, vods[vodId].streamTitle);
+      addLink(
+        `https://twitch.tv/videos/${vodId}`,
+        vods[vodId].streamTitle,
+        vodId,
+        deleteVodLink,
+      );
     }
   } else {
-    const clearButton = document.querySelector(".clear-button");
     clearButton?.remove();
-
     displayEmpty("Add timestamps to see VOD links here :)");
   }
 };
@@ -161,7 +164,34 @@ const displayVodLinks = async (username) => {
   const vods = res[username] ?? {};
 
   createTitle(`${username}'s VOD Links`);
-  displayLinks(vods);
+  displayVodList(vods);
+};
+
+const displayStreamerList = (users) => {
+  const bookmarks = document.querySelector(".bookmarks");
+  bookmarks.innerHTML = "";
+
+  const usernames = Object.keys(users);
+
+  if (usernames.length > 0) {
+    for (const username of usernames) {
+      addLink(
+        `https://twitch.tv/${username}`,
+        username,
+        username,
+        deleteStreamerLink,
+      );
+    }
+  } else {
+    displayEmpty("save timestamps to see links to streamers here :)");
+  }
+};
+
+const displayStreamersLinks = async () => {
+  const users = await chrome.storage.local.get(null);
+
+  createTitle("User Links");
+  displayStreamerList(users);
 };
 
 const playTimestamp = async (e) => {
@@ -192,7 +222,7 @@ const deleteTimestamp = async (e) => {
   );
 };
 
-const deleteVod = async () => {
+const deleteAllTimestamps = async () => {
   const activeTab = await getActiveTabUrl();
 
   await chrome.tabs.sendMessage(
@@ -202,28 +232,39 @@ const deleteVod = async () => {
   );
 };
 
-const deleteVodLinks = async () => {
+const deleteAllVods = async () => {
   const activeTab = await getActiveTabUrl();
 
   await chrome.tabs.sendMessage(
     activeTab.id,
-    { action: "CLEAR_STREAMER_INFO" },
-    displayLinks,
+    { action: "DELETE_STREAMER_VODS" },
+    displayVodList,
   );
 };
 
 const deleteVodLink = async (e) => {
   const activeTab = await getActiveTabUrl();
-
   const vodLinkToRemove = e.target.parentNode.parentNode;
-  const vodId = vodLinkToRemove.dataset.vodId;
+  const vodId = vodLinkToRemove.dataset.id;
 
   vodLinkToRemove.remove();
 
   await chrome.tabs.sendMessage(
     activeTab.id,
     { action: "DELETE_VOD", vodId: vodId },
-    displayLinks,
+    displayVodList,
+  );
+};
+
+const deleteStreamerLink = async (e) => {
+  const activeTab = await getActiveTabUrl();
+  const userLinkToRemove = e.target.parentNode.parentNode;
+  const username = userLinkToRemove.dataset.id;
+
+  await chrome.tabs.sendMessage(
+    activeTab.id,
+    { action: "DELETE_STREAMER", username: username },
+    displayStreamerList,
   );
 };
 
@@ -236,9 +277,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // check for missing username instead of missing VOD ID, as the user could be on a livestream without a VOD attached to it
   if (!username) {
-    displayEmpty(
-      "Go to a vod or livestream to see/add timestamps or vod links",
-    );
+    displayStreamersLinks();
   } else if (vodId && !liveStreamStartTime) {
     displayVodTimestamps(vodId, username); // watching vod
   } else {

@@ -390,9 +390,19 @@
       })();
 
       return true;
-    } else if (request.action === "CLEAR_STREAMER_INFO") {
+    } else if (request.action === "DELETE_STREAMER_VODS") {
       chrome.storage.local.remove([username]);
       sendResponse({});
+    } else if (request.action === "DELETE_STREAMER") {
+      (async () => {
+        const users = await chrome.storage.local.get(null);
+        delete users[request.username];
+
+        await chrome.storage.local.remove([request.username]);
+
+        sendResponse(users);
+      })();
+      return true;
     }
     return false;
   });

@@ -104,7 +104,7 @@ h1 {
   color: white;
 }
 
-.vod-link {
+.link {
   width: fit-content;
   padding: 2px;
   font-size: 14px;
@@ -112,6 +112,6 @@ h1 {
   color: #2563eb;
 }
 
-.vod-link:hover {
+.link:hover {
   text-decoration: underline;
 }
