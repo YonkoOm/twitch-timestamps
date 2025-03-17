@@ -190,17 +190,23 @@
     videoPlayer.appendChild(noteField);
   };
 
+  const removeBookmarkButton = () => {
+    document.querySelector(".bookmark")?.remove();
+  };
+
   const removeNoteField = () => {
     document.querySelector(".note-input")?.remove();
   };
 
   const insertBookmarkButton = () => {
     let bookmarkButton = document.querySelector(".bookmark");
+    if (bookmarkButton) {
+      return;
+    }
+
     const videoPlayerControls = document.querySelector(
       ".player-controls__right-control-group",
     );
-
-    if (bookmarkButton || !videoPlayerControls) return; // videoPlayerControls checks if the user is on the streamer's home page (URL contains their username) while the stream is playing in the background
 
     bookmarkButton = document.createElement("button");
     bookmarkButton.className = "bookmark";
@@ -212,10 +218,6 @@
     bookmarkButton.addEventListener("click", showNoteField);
 
     videoPlayerControls.appendChild(bookmarkButton);
-  };
-
-  const removeBookmarkButton = () => {
-    document.querySelector(".bookmark")?.remove();
   };
 
   const jumpToNextTimestamp = async () => {
@@ -312,8 +314,13 @@
   };
 
   const updateBookmarkUI = async () => {
-    // insert bookmark UI if VOD exists
-    if (vodId) {
+    // videoPlayerControls checks if the user is on the streamer's home page (URL contains their username) while the stream is playing in the background
+    const videoPlayerControls = document.querySelector(
+      ".player-controls__right-control-group",
+    );
+
+    // insert bookmark UI if a VOD exists and the user is watching either a VOD or a livestream.
+    if (vodId && videoPlayerControls) {
       insertBookmarkButton();
       addNoteField();
     } else {
