@@ -237,7 +237,7 @@ const deleteAllVods = async () => {
 
   await chrome.tabs.sendMessage(
     activeTab.id,
-    { action: "DELETE_STREAMER_VODS" },
+    { action: "DELETE_STREAMER" },
     displayVodList,
   );
 };
