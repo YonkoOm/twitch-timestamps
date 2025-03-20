@@ -159,9 +159,11 @@
 
   const addNoteField = () => {
     let noteField = document.querySelector(".note-input");
-    const videoPlayer = document.querySelector(".video-player");
+    const videoPlayerContainer = document.querySelector(
+      ".video-player__container",
+    );
 
-    if (noteField || !videoPlayer) return;
+    if (noteField || !videoPlayerContainer) return;
 
     noteField = document.createElement("input");
     noteField.classList.add("note-input", "hidden");
@@ -187,7 +189,7 @@
 
     noteField.addEventListener("blur", hideNoteField);
 
-    videoPlayer.appendChild(noteField);
+    videoPlayerContainer.appendChild(noteField);
   };
 
   const removeBookmarkButton = () => {
