@@ -190,7 +190,7 @@ const displayStreamerList = (users) => {
 const displayStreamersLinks = async () => {
   const users = await chrome.storage.local.get(null);
 
-  createTitle("User Links");
+  createTitle("Streamer Links");
   displayStreamerList(users);
 };
 
