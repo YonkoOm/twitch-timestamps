@@ -5,6 +5,7 @@ Twitch Timestamp is a Chrome extension that lets you save memorable moments from
 ## Features
 
 - Bookmark any moment during a live Twitch stream (_if VOD associated to the livestream is available_).
+  - You can add bookmarks when watching a VOD as well.
 - Add a personal note about the moment you're saving.
 - View and manage all saved bookmarks in a clean list.
 - Jump to exact moments in VODs (as long they are still available on Twitch).
